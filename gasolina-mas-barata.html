@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gasolineras Baratas Cercanas</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: sans-serif;
+    }
+    #map {
+      height: calc(100% - 60px - 200px);
+    }
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    header input, header select, header button {
+      margin: 5px;
+      padding: 6px;
+      font-size: 16px;
+      border-radius: 4px;
+      border: none;
+    }
+    header input[type="text"] {
+      flex: 2;
+      min-width: 120px;
+    }
+    header input[type="number"] {
+      width: 70px;
+    }
+    header input[type="number"]::after {
+      content: ' km';
+    }
+    #stationList {
+      max-height: 200px;
+      overflow-y: auto;
+      background: #f4f4f4;
+      padding: 10px;
+      font-size: 14px;
+    }
+    .station-item {
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 5px;
+      background: #ffffff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .station-item button {
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      margin-top: 5px;
+      border-radius: 4px;
+    }
+    #spinner {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <input type="text" id="address" placeholder="Dirección" />
+    <input type="number" id="distance" placeholder="Km" value="5" /> Km
+    <select id="fuelType">
+      <option value="Precio Gasolina 95 E5">Gasolina 95</option>
+      <option value="Precio Gasolina 98 E5">Gasolina 98</option>
+      <option value="Precio Gasoleo A">Diésel A</option>
+      <option value="Precio Gasoleo Premium">Diésel Premium</option>
+    </select>
+    <select id="sortBy">
+      <option value="price">Ordenar por Precio</option>
+      <option value="distance">Ordenar por Distancia</option>
+    </select>
+    <button onclick="fetchCoordinatesFromAddress()">Buscar</button>
+  </header>
+  <div id="spinner">
+    <img src="https://i.gifer.com/YlWC.gif" alt="Cargando..." width="180" />
+  </div>
+  <div id="map"></div>
+  <div id="stationList"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let map, userLatLng, userMarker;
+
+    window.onload = () => {
+      initMap();
+    }
+
+    document.querySelector("header").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        document.querySelector("button[onclick='fetchCoordinatesFromAddress()']").click();
+      }
+    });
+
+    function showSpinner(show) {
+      document.getElementById('spinner').style.display = show ? 'block' : 'none';
+    }
+
+    async function initMap() {
+      map = L.map("map").setView([40.4168, -3.7038], 6);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(map);
+
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        userLatLng = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        map.setView([userLatLng.lat, userLatLng.lng], 13);
+        L.marker(userLatLng).addTo(map).bindPopup("Tu ubicación");
+        const comunidad = await obtenerComunidadAutonoma(userLatLng.lat, userLatLng.lng);
+        const comunidadId = getComunidadId(comunidad);
+        await fetchAndDisplayGasStations(comunidadId);
+      }, async () => {
+        await fetchCoordinatesFromAddress();
+      });
+    }
+
+    async function fetchCoordinatesFromAddress() {
+      const address = document.getElementById("address").value;
+      if (!address) {
+        alert("Por favor, introduce una dirección.");
+        return;
+      }
+
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
+      const data = await response.json();
+      if (data.length > 0) {
+        userLatLng = {
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon)
+        };
+        const comunidad = await obtenerComunidadAutonoma(userLatLng.lat, userLatLng.lng);
+        const comunidadId = getComunidadId(comunidad);
+        map.setView([userLatLng.lat, userLatLng.lng], 13);
+        if (userMarker) map.removeLayer(userMarker);
+        await fetchAndDisplayGasStations(comunidadId);
+        userMarker = L.marker(userLatLng, { icon: L.icon({
+          iconUrl: 'https://maps.google.com/mapfiles/kml/pushpin/red-pushpin.png',
+          iconSize: [32, 32],
+          iconAnchor: [16, 32]
+        }) }).addTo(map).bindPopup("Ubicación introducida");
+      } else {
+        alert("Dirección no encontrada.");
+      }
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    function getColorForPrice(price, min, max) {
+      const percent = (price - min) / (max - min);
+      const r = Math.floor(255 * percent);
+      const g = Math.floor(255 * (1 - percent));
+      return `rgb(${r}, ${g}, 0)`;
+    }
+
+    async function fetchAndDisplayGasStations(comunidadId) {
+      console.log("Comunidad ID:", comunidadId);
+      showSpinner(true);
+      const fuelKey = document.getElementById("fuelType").value;
+      const maxDistance = parseFloat(document.getElementById("distance").value) || 5;
+      const sortBy = document.getElementById("sortBy").value;
+      let response;
+      if (comunidadId == null) {
+        response = await fetch("https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/");
+      } else {
+        response = await fetch(`https://sedeaplicaciones.minetur.gob.es/ServiciosRESTCarburantes/PreciosCarburantes/EstacionesTerrestres/FiltroCCAA/${comunidadId}`);
+      }
+      const json = await response.json();
+      const stations = json.ListaEESSPrecio;
+
+      map.eachLayer(layer => {
+        if (layer instanceof L.Marker && (!layer._popup || !layer._popup._content.includes("ubicación"))) {
+          map.removeLayer(layer);
+        }
+      });
+
+      let validStations = stations
+        .map(station => {
+          const lat = parseFloat(station["Latitud"].replace(",", "."));
+          const lon = parseFloat(station["Longitud (WGS84)"].replace(",", "."));
+          const price = parseFloat(station[fuelKey]?.replace(",", "."));
+          const distance = calculateDistance(userLatLng.lat, userLatLng.lng, lat, lon);
+          return { ...station, lat, lon, price, distance };
+        })
+        .filter(station => !isNaN(station.price) && station.distance <= maxDistance);
+
+      const prices = validStations.map(s => s.price);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+
+      validStations.sort((a, b) => sortBy === 'price' ? a.price - b.price : a.distance - b.distance);
+      validStations = validStations.slice(0, 20);
+
+      document.getElementById("stationList").innerHTML = "";
+
+      validStations.forEach((station, index) => {
+        const popupText = `
+          <strong>${index + 1}. ${station["Rótulo"]}</strong><br/>
+          Precio: ${station.price.toFixed(2)} €/L<br/>
+          Dirección: ${station["Dirección"]}<br/>
+          Distancia: ${station.distance.toFixed(2)} km
+        `;
+
+        const color = getColorForPrice(station.price, minPrice, maxPrice);
+
+        const icon = L.divIcon({
+          html: `<div style="background-color:${color};border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;color:white;font-weight:bold;">${index + 1}</div>`,
+          className: '',
+          iconSize: [30, 30]
+        });
+
+        L.marker([station.lat, station.lon], { icon }).addTo(map).bindPopup(popupText);
+
+        const stationItem = document.createElement("div");
+        stationItem.className = "station-item";
+        stationItem.innerHTML = `
+          <span><strong style="color:${color};">${index + 1}. ${station["Rótulo"]}</strong></span><br/>
+          Precio: ${station.price.toFixed(2)} €/L<br/>
+          Dirección: ${station["Dirección"]}<br/>
+          Distancia: ${station.distance.toFixed(2)} km<br/>
+          <button onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${station.lat},${station.lon}', '_blank')">Cómo llegar</button>
+        `;
+        document.getElementById("stationList").appendChild(stationItem);
+      });
+      showSpinner(false);
+    }
+
+    async function obtenerComunidadAutonoma(lat, lon) {
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=es`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data && data.address) {
+          return data.address.state || data.address.region || "Desconocida";
+        } else {
+          return "Desconocida";
+        }
+      } catch (error) {
+        console.error("Error al obtener comunidad autónoma:", error);
+        return "Desconocida";
+      }
+    }
+
+    function getComunidadId(nombre) {
+      const comunidades = {
+        'andalucia': '01', 'andalucía': '01', 'aragon': '02', 'aragón': '02',
+        'asturias': '03', 'principado de asturias': '03', 'baleares': '04',
+        'illes balears': '04', 'islas baleares': '04', 'canarias': '05', 'cantabria': '06',
+        'castilla la mancha': '07', 'castilla-la mancha': '07', 'castilla y leon': '08',
+        'castilla y león': '08', 'cataluña': '09', 'catalunya': '09', 'cataluna': '09',
+        'comunidad valenciana': '10', 'valencia': '10', 'c. valenciana': '10',
+        'extremadura': '11', 'galicia': '12', 'madrid': '13', 'comunidad de madrid': '13',
+        'murcia': '14', 'region de murcia': '14', 'región de murcia': '14',
+        'navarra': '15', 'navarra (nafarroa)': '15', 'pais vasco': '16', 'país vasco': '16',
+        'euskadi': '16', 'la rioja': '17', 'rioja': '17', 'rioja (la)': '17',
+        'ceuta': '18', 'melilla': '19'
+      };
+      if (typeof nombre !== 'string') return null;
+      const normalizado = nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+      return comunidades[normalizado] || null;
+    }
+  </script>
+</body>
+</html>
