@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Eduard Torres Romero</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #0066ff;
+      --bg-color: #f9f9f9;
+      --text-color: #333;
+      --card-bg: #fff;
+      --card-shadow: rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    header {
+      background-color: #ffffff;
+      text-align: center;
+      padding: 3rem 1rem 2rem;
+      box-shadow: 0 2px 8px var(--card-shadow);
+    }
+
+    header img {
+      width: 140px;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 4px solid var(--primary-color);
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.2rem;
+      font-weight: 700;
+    }
+
+    p.subtitle {
+      font-size: 1.2rem;
+      margin: 0.5rem 0 1.5rem;
+      color: #555;
+    }
+
+    section.intro {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      font-size: 1.1rem;
+      line-height: 1.7;
+      text-align: center;
+    }
+
+    .projects {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem 1.5rem;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 16px;
+      box-shadow: 0 8px 20px var(--card-shadow);
+      width: 300px;
+      text-align: left;
+      padding: 1.5rem;
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+    }
+
+    .card h3 {
+      color: var(--primary-color);
+      margin-top: 0;
+    }
+
+    .card p {
+      font-size: 1rem;
+      color: #555;
+    }
+
+    .card a {
+      display: inline-block;
+      margin-top: 1rem;
+      text-decoration: none;
+      font-weight: 500;
+      color: var(--primary-color);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: #888;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="https://via.placeholder.com/150" alt="Eduard Torres Romero" />
+    <h1>¡Hola! Soy Eduard 👋</h1>
+    <p class="subtitle">Ingeniero en Telecomunicaciones y creador digital</p>
+  </header>
+
+  <section class="intro">
+    <p>
+      Soy un apasionado de la tecnología, la creatividad y las buenas ideas. Me formé como <strong>Ingeniero en Telecomunicaciones</strong>, y desde entonces he estado mezclando el mundo de los datos, el software y la innovación para crear cosas útiles (¡y bonitas!).
+    </p>
+    <p>
+      Me encanta resolver problemas, automatizar procesos, analizar datos y lanzar proyectos que aporten valor. Aquí te comparto dos de mis creaciones: uno para encontrar la <em>gasolinera más barata</em> cerca de ti, y otro que te regala una <em>dosis diaria de cultura general</em>.
+    </p>
+  </section>
+
+  <section class="projects">
+    <div class="card">
+      <h3>⛽ Buscador de Gasolineras</h3>
+      <p>Consulta en tiempo real las gasolineras más baratas según tu ubicación. Ahorra y planifica mejor tus desplazamientos.</p>
+      <a href="https://tusitioweb.com/gasolineras" target="_blank">Ver proyecto →</a>
+    </div>
+
+    <div class="card">
+      <h3>📚 Píldoras de Cultura</h3>
+      <p>Mini-artículos diarios con curiosidades, historia, ciencia y más. Aprende algo nuevo cada día en menos de 1 minuto.</p>
+      <a href="https://tusitioweb.com/pildoras" target="_blank">Ver proyecto →</a>
+    </div>
+  </section>
+
+  <footer>
+    © 2025 Eduard Torres Romero · eduard.torres.romero@me.com · Barcelona
+  </footer>
+
+</body>
+</html>
