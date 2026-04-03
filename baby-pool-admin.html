@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Porra del Bebé</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #f8a4c8;
+      --pink-light: #fce4f0;
+      --pink-dark: #e87bab;
+      --green: #7bc88a;
+      --green-light: #e4f5e8;
+      --red: #e87b7b;
+      --red-light: #fce4e4;
+      --blue-light: #e4f0fc;
+      --bg: #fef7fb;
+      --text: #4a3347;
+      --text-light: #8a7388;
+      --white: #ffffff;
+      --shadow: 0 4px 20px rgba(248, 164, 200, 0.15);
+      --radius: 16px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin: 20px 0;
+    }
+
+    /* Login */
+    .login-section {
+      max-width: 400px;
+      margin: 60px auto;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 40px 30px;
+      text-align: center;
+    }
+
+    .login-section h2 {
+      margin-bottom: 20px;
+    }
+
+    .login-section input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid var(--pink-light);
+      border-radius: 12px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      margin-bottom: 15px;
+      outline: none;
+    }
+
+    .login-section input:focus {
+      border-color: var(--pink);
+    }
+
+    .btn {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+      color: white;
+      box-shadow: 0 4px 15px rgba(232, 123, 171, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-approve {
+      background: var(--green-light);
+      color: var(--green);
+      font-size: 0.85rem;
+      padding: 8px 16px;
+    }
+
+    .btn-approve:hover {
+      background: var(--green);
+      color: white;
+    }
+
+    .btn-reject {
+      background: var(--red-light);
+      color: var(--red);
+      font-size: 0.85rem;
+      padding: 8px 16px;
+    }
+
+    .btn-reject:hover {
+      background: var(--red);
+      color: white;
+    }
+
+    /* Dashboard */
+    .dashboard {
+      display: none;
+    }
+
+    .dashboard.active {
+      display: block;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+
+    .tab-btn {
+      padding: 10px 24px;
+      border: 2px solid var(--pink-light);
+      border-radius: 12px;
+      background: var(--white);
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      color: var(--text-light);
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--pink-light);
+      border-color: var(--pink);
+      color: var(--text);
+    }
+
+    .panel {
+      display: none;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 25px;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .panel h3 {
+      margin-bottom: 15px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      background: var(--pink-light);
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: left;
+    }
+
+    th:first-child { border-radius: 8px 0 0 8px; }
+    th:last-child { border-radius: 0 8px 8px 0; }
+
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--pink-light);
+      font-size: 0.9rem;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-approved {
+      background: var(--green-light);
+      color: var(--green);
+    }
+
+    .status-rejected {
+      background: var(--red-light);
+      color: var(--red);
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .empty-msg {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+
+    .refresh-bar {
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .stats-mini {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .stat-mini {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 15px 20px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .stat-mini .val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--pink-dark);
+    }
+
+    .stat-mini .lbl {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- Login -->
+    <div class="login-section" id="loginSection">
+      <h2>🔐 Admin</h2>
+      <input type="password" id="adminPassword" placeholder="Contraseña" onkeydown="if(event.key==='Enter')login()">
+      <br>
+      <button class="btn btn-primary" onclick="login()">Entrar</button>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+      <h1>🍼 Panel de Admin</h1>
+
+      <div class="stats-mini" id="statsMini">
+        <div class="stat-mini">
+          <div class="val" id="sPending">0</div>
+          <div class="lbl">Pendientes</div>
+        </div>
+        <div class="stat-mini">
+          <div class="val" id="sApproved">0</div>
+          <div class="lbl">Aprobadas</div>
+        </div>
+        <div class="stat-mini">
+          <div class="val" id="sTotal">0€</div>
+          <div class="lbl">Bote</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('pending')">⏳ Pendientes</button>
+        <button class="tab-btn" onclick="switchTab('all')">📋 Todas</button>
+      </div>
+
+      <div class="refresh-bar">
+        <button class="btn" style="background:var(--blue-light);font-size:0.85rem;padding:8px 16px;" onclick="refreshData()">🔄 Refrescar</button>
+      </div>
+
+      <!-- Pending panel -->
+      <div class="panel active" id="panelPending">
+        <h3>Apuestas pendientes de validación</h3>
+        <div id="pendingContainer">
+          <div class="empty-msg">No hay apuestas pendientes 🎉</div>
+        </div>
+      </div>
+
+      <!-- All panel -->
+      <div class="panel" id="panelAll">
+        <h3>Todas las apuestas</h3>
+        <div id="allContainer">
+          <div class="empty-msg">Cargando...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // CONFIG — Same Apps Script URL
+    // ============================================================
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwW5Z7HcEiRsKpXz_rQWF1AUq5QjDT3XwCr7EF1EXXTUTumkgz0On6RPs4SBKjxd5si/exec';
+
+    let adminPassword = '';
+
+    function login() {
+      adminPassword = document.getElementById('adminPassword').value;
+      if (!adminPassword) return;
+
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('dashboard').classList.add('active');
+      refreshData();
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+      if (tab === 'pending') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('panelPending').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('panelAll').classList.add('active');
+      }
+    }
+
+    async function refreshData() {
+      await Promise.all([loadPending(), loadAll(), loadStats()]);
+    }
+
+    async function loadStats() {
+      try {
+        const resp = await fetch(`${API_URL}?action=getStats`);
+        const data = await resp.json();
+        document.getElementById('sApproved').textContent = data.totalBets || 0;
+        document.getElementById('sTotal').textContent = `${data.totalPool || 0}€`;
+      } catch (e) {}
+
+      try {
+        const resp = await fetch(`${API_URL}?action=adminGetPending&password=${encodeURIComponent(adminPassword)}`);
+        const data = await resp.json();
+        document.getElementById('sPending').textContent = data.bets?.length || 0;
+      } catch (e) {}
+    }
+
+    async function loadPending() {
+      try {
+        const resp = await fetch(`${API_URL}?action=adminGetPending&password=${encodeURIComponent(adminPassword)}`);
+        const data = await resp.json();
+
+        if (data.error) {
+          alert('Error: ' + data.error);
+          return;
+        }
+
+        if (!data.bets || data.bets.length === 0) {
+          document.getElementById('pendingContainer').innerHTML = '<div class="empty-msg">No hay apuestas pendientes 🎉</div>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>ID</th><th>Nombre</th><th>Fecha</th><th>€</th><th>Enviado</th><th>Acciones</th></tr></thead><tbody>';
+
+        data.bets.forEach(bet => {
+          const d = new Date(bet.date);
+          const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+          const dLocal = new Date(dateStr + 'T12:00:00');
+          const formatted = dLocal.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+          const ts = new Date(bet.timestamp).toLocaleString('es-ES');
+
+          html += `<tr>
+            <td><code>${bet.id}</code></td>
+            <td>${escapeHtml(bet.name)}</td>
+            <td>${formatted}</td>
+            <td>${bet.amount}€</td>
+            <td style="font-size:0.8rem">${ts}</td>
+            <td class="actions">
+              <button class="btn btn-approve" onclick="approveBet('${bet.id}')">✅ Aprobar</button>
+              <button class="btn btn-reject" onclick="rejectBet('${bet.id}')">❌ Rechazar</button>
+            </td>
+          </tr>`;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('pendingContainer').innerHTML = html;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function loadAll() {
+      try {
+        const resp = await fetch(`${API_URL}?action=adminGetAll&password=${encodeURIComponent(adminPassword)}`);
+        const data = await resp.json();
+
+        if (!data.bets || data.bets.length === 0) {
+          document.getElementById('allContainer').innerHTML = '<div class="empty-msg">No hay apuestas aún</div>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>ID</th><th>Nombre</th><th>Fecha</th><th>€</th><th>Estado</th><th>Enviado</th></tr></thead><tbody>';
+
+        data.bets.forEach(bet => {
+          const d = new Date(bet.date);
+          const dateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+          const dLocal = new Date(dateStr + 'T12:00:00');
+          const formatted = dLocal.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+          const ts = new Date(bet.timestamp).toLocaleString('es-ES');
+          const statusClass = `status-${bet.status}`;
+          const statusLabel = { pending: '⏳ Pendiente', approved: '✅ Aprobada', rejected: '❌ Rechazada' }[bet.status] || bet.status;
+
+          html += `<tr>
+            <td><code>${bet.id}</code></td>
+            <td>${escapeHtml(bet.name)}</td>
+            <td>${formatted}</td>
+            <td>${bet.amount}€</td>
+            <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+            <td style="font-size:0.8rem">${ts}</td>
+          </tr>`;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('allContainer').innerHTML = html;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function approveBet(id) {
+      if (!confirm('¿Aprobar esta apuesta?')) return;
+
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'approveBet', id: id, password: adminPassword })
+        });
+        refreshData();
+      } catch (e) {
+        alert('Error');
+      }
+    }
+
+    async function rejectBet(id) {
+      if (!confirm('¿Rechazar esta apuesta?')) return;
+
+      try {
+        await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'rejectBet', id: id, password: adminPassword })
+        });
+        refreshData();
+      } catch (e) {
+        alert('Error');
+      }
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
