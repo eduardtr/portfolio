@@ -1066,13 +1066,13 @@
       const existingBets = statsData.dateCounts?.[dateStr] || 0;
       // Total participaciones para este día = existentes + las del usuario
       const totalForDate = existingBets + myAmount;
-      const myPrize = Math.round(winnerPrize / totalForDate);
+      const myPrize = Math.round((myAmount / totalForDate) * winnerPrize);
 
       document.getElementById('prizeValue').textContent = myPrize + '€';
       if (existingBets > 0) {
-        document.getElementById('prizeDetail').textContent = `${existingBets} participación${existingBets > 1 ? 'es' : ''} ya en este día — premio a repartir entre ${totalForDate}`;
+        document.getElementById('prizeDetail').textContent = `${existingBets} participación${existingBets > 1 ? 'es' : ''} ya en este día — tu parte: ${myAmount} de ${totalForDate}`;
       } else {
-        document.getElementById('prizeDetail').textContent = `Serías el primero en apostar por este día — te llevarías ${myPrize}€`;
+        document.getElementById('prizeDetail').textContent = `Nadie ha apostado por este día — te llevarías ${myPrize}€`;
       }
       preview.style.display = 'block';
     }
@@ -1118,20 +1118,22 @@
         if (!data.bets || data.bets.length === 0) return;
 
         let html = '<table class="bets-table">';
-        html += '<thead><tr><th>Nombre</th><th>Fecha</th><th>Apuesta</th><th>Cuota</th></tr></thead>';
+        html += '<thead><tr><th>Nombre</th><th>Fecha</th><th>Apuesta</th><th>Premio est.</th></tr></thead>';
         html += '<tbody>';
 
         data.bets.forEach(bet => {
           const dateKey = normalizeDate(bet.date);
           const dObj = new Date(dateKey + 'T12:00:00');
           const formatted = dObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-          const odds = statsData.odds?.[dateKey] || '-';
+          const winnerPrize = (statsData.totalPool || 0) * 0.5;
+          const dateBets = statsData.dateCounts?.[dateKey] || 1;
+          const estPrize = Math.round((bet.amount / dateBets) * winnerPrize);
 
           html += `<tr>
             <td>${escapeHtml(bet.name)}</td>
             <td>${formatted}</td>
             <td>${bet.amount}€</td>
-            <td><span class="odds-badge">${odds !== '-' ? 'x' + odds : '-'}</span></td>
+            <td><span class="odds-badge">${estPrize}€</span></td>
           </tr>`;
         });
 
