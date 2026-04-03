@@ -688,6 +688,49 @@
       right: 2px;
     }
 
+    .date-cell .day-info {
+      font-size: 0.45rem;
+      color: var(--text-light);
+      line-height: 1.2;
+      margin-top: 1px;
+    }
+
+    .date-cell.selected .day-info {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .date-cell.has-bets .day-info {
+      color: var(--text);
+    }
+
+    .prize-preview {
+      background: var(--accent-light);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 12px;
+      text-align: center;
+      display: none;
+    }
+
+    .prize-preview .prize-label {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      margin-bottom: 4px;
+    }
+
+    .prize-preview .prize-value {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .prize-preview .prize-detail {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+
     .date-cell.empty {
       cursor: default;
     }
@@ -807,6 +850,12 @@
           </div>
         </div>
 
+        <div class="prize-preview" id="prizePreview">
+          <div class="prize-label">🏆 Premio si aciertas este día</div>
+          <div class="prize-value" id="prizeValue">0€</div>
+          <div class="prize-detail" id="prizeDetail"></div>
+        </div>
+
         <button type="submit" class="btn-primary" id="submitBtn" onclick="placeBet()">
           ¡Apostar! 🍀
         </button>
@@ -920,6 +969,8 @@
       const startDate = new Date(2026, 7, 15); // Aug 15
       const endDate = new Date(2026, 8, 15);   // Sep 15
       const excludedDate = '2026-09-02';
+      const totalPool = statsData.totalPool || 0;
+      const winnerPrize = totalPool * 0.5;
 
       const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -936,7 +987,10 @@
 
       const current = new Date(startDate);
       while (current <= endDate) {
-        const dateStr = current.toISOString().split('T')[0];
+        const yyyy = current.getFullYear();
+        const mm = String(current.getMonth() + 1).padStart(2, '0');
+        const dd = String(current.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
         const day = current.getDate();
         const month = current.getMonth();
         const monthLabel = month === 7 ? 'ago' : 'sep';
@@ -959,6 +1013,10 @@
         html += `<span>${day}</span>`;
         if (betCount > 0 && dateStr !== excludedDate) {
           html += `<span class="bet-count">${betCount}</span>`;
+          const prizePerPerson = betCount > 0 ? Math.round(winnerPrize / betCount) : 0;
+          html += `<span class="day-info">${betCount}p · ${prizePerPerson}€</span>`;
+        } else if (dateStr !== excludedDate) {
+          html += `<span class="day-info">${winnerPrize > 0 ? Math.round(winnerPrize) + '€' : ''}</span>`;
         }
         html += '</div>';
 
@@ -977,9 +1035,29 @@
       selectedDate = dateStr;
       document.getElementById('betDate').value = dateStr;
 
-      // Show odds for selected date
-      if (statsData.odds?.[dateStr]) {
-        // Could show odds info somewhere
+      // Show prize preview for selected date
+      updatePrizePreview(dateStr);
+    }
+
+    function updatePrizePreview(dateStr) {
+      const preview = document.getElementById('prizePreview');
+      const totalPool = statsData.totalPool || 0;
+      const winnerPrize = totalPool * 0.5;
+      const betCount = statsData.dateCounts?.[dateStr] || 0;
+      // After placing this bet, there will be betCount+1 people for this date
+      const totalPeopleForDate = betCount + 1;
+      const myPrize = Math.round(winnerPrize / totalPeopleForDate);
+
+      if (totalPool > 0) {
+        document.getElementById('prizeValue').textContent = myPrize + '€';
+        if (betCount > 0) {
+          document.getElementById('prizeDetail').textContent = `${betCount} persona${betCount > 1 ? 's' : ''} ya apostaron por este día — premio a repartir entre ${totalPeopleForDate}`;
+        } else {
+          document.getElementById('prizeDetail').textContent = '¡Nadie ha apostado por este día aún! Serías el único ganador';
+        }
+        preview.style.display = 'block';
+      } else {
+        preview.style.display = 'none';
       }
     }
 
@@ -1022,23 +1100,16 @@
         html += '<tbody>';
 
         data.bets.forEach(bet => {
-          const dateVal = bet.date;
-          let d;
-          if (typeof dateVal === 'object' && dateVal instanceof Date) {
-            d = dateVal;
-          } else if (typeof dateVal === 'string' && dateVal.includes('T')) {
-            d = new Date(dateVal);
-          } else {
-            d = new Date(dateVal + 'T00:00:00');
-          }
-          const formatted = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-          const odds = statsData.odds?.[bet.date] || '-';
+          const dateKey = bet.date.includes('T') ? bet.date.split('T')[0] : bet.date;
+          const d = new Date(dateKey + 'T12:00:00');
+          const formatted = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+          const odds = statsData.odds?.[dateKey] || statsData.odds?.[bet.date] || '-';
 
           html += `<tr>
             <td>${escapeHtml(bet.name)}</td>
             <td>${formatted}</td>
             <td>${bet.amount}€</td>
-            <td><span class="odds-badge">x${odds}</span></td>
+            <td><span class="odds-badge">${odds !== '-' ? 'x' + odds : '-'}</span></td>
           </tr>`;
         });
 
