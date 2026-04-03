@@ -1059,24 +1059,22 @@
 
     function updatePrizePreview(dateStr) {
       const preview = document.getElementById('prizePreview');
-      const totalPool = statsData.totalPool || 0;
-      const winnerPrize = totalPool * 0.5;
-      const betCount = statsData.dateCounts?.[dateStr] || 0;
-      // After placing this bet, there will be betCount+1 people for this date
-      const totalPeopleForDate = betCount + 1;
-      const myPrize = Math.round(winnerPrize / totalPeopleForDate);
+      const currentPool = statsData.totalPool || 0;
+      const myAmount = betAmount; // participaciones del usuario
+      const newPool = currentPool + myAmount;
+      const winnerPrize = newPool * 0.5;
+      const existingBets = statsData.dateCounts?.[dateStr] || 0;
+      // Total participaciones para este día = existentes + las del usuario
+      const totalForDate = existingBets + myAmount;
+      const myPrize = Math.round(winnerPrize / totalForDate);
 
-      if (totalPool > 0) {
-        document.getElementById('prizeValue').textContent = myPrize + '€';
-        if (betCount > 0) {
-          document.getElementById('prizeDetail').textContent = `${betCount} persona${betCount > 1 ? 's' : ''} ya apostaron por este día — premio a repartir entre ${totalPeopleForDate}`;
-        } else {
-          document.getElementById('prizeDetail').textContent = '¡Nadie ha apostado por este día aún! Serías el único ganador';
-        }
-        preview.style.display = 'block';
+      document.getElementById('prizeValue').textContent = myPrize + '€';
+      if (existingBets > 0) {
+        document.getElementById('prizeDetail').textContent = `${existingBets} participación${existingBets > 1 ? 'es' : ''} ya en este día — premio a repartir entre ${totalForDate}`;
       } else {
-        preview.style.display = 'none';
+        document.getElementById('prizeDetail').textContent = `Serías el primero en apostar por este día — te llevarías ${myPrize}€`;
       }
+      preview.style.display = 'block';
     }
 
     // ============================================================
@@ -1085,6 +1083,8 @@
     function changeAmount(delta) {
       betAmount = Math.max(1, betAmount + delta);
       document.getElementById('betAmount').textContent = betAmount;
+      // Recalculate prize preview with new amount
+      if (selectedDate) updatePrizePreview(selectedDate);
     }
 
     // ============================================================
