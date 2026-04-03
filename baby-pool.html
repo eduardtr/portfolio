@@ -1022,8 +1022,16 @@
         html += '<tbody>';
 
         data.bets.forEach(bet => {
-          const d = new Date(bet.date + 'T00:00:00');
-          const formatted = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+          const dateVal = bet.date;
+          let d;
+          if (typeof dateVal === 'object' && dateVal instanceof Date) {
+            d = dateVal;
+          } else if (typeof dateVal === 'string' && dateVal.includes('T')) {
+            d = new Date(dateVal);
+          } else {
+            d = new Date(dateVal + 'T00:00:00');
+          }
+          const formatted = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
           const odds = statsData.odds?.[bet.date] || '-';
 
           html += `<tr>
