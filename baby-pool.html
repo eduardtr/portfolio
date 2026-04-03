@@ -961,6 +961,24 @@
     let betAmount = 1;
     let statsData = {};
 
+    // Normalize any date representation to YYYY-MM-DD in local timezone
+    function normalizeDate(val) {
+      const d = new Date(val);
+      if (isNaN(d)) return val;
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+    }
+
+    // Re-key an object so all date keys become YYYY-MM-DD
+    function normalizeDateKeys(obj) {
+      if (!obj || typeof obj !== 'object') return {};
+      const out = {};
+      for (const [k, v] of Object.entries(obj)) {
+        out[normalizeDate(k)] = v;
+      }
+      return out;
+    }
     // ============================================================
     // Calendar
     // ============================================================
@@ -1077,6 +1095,10 @@
         const resp = await fetch(`${API_URL}?action=getStats`);
         statsData = await resp.json();
 
+        // Normalize date keys from Apps Script format to YYYY-MM-DD
+        statsData.dateCounts = normalizeDateKeys(statsData.dateCounts);
+        statsData.odds = normalizeDateKeys(statsData.odds);
+
         document.getElementById('statBets').textContent = statsData.totalBets || 0;
         document.getElementById('statPool').textContent = `${statsData.totalPool || 0}€`;
         document.getElementById('statPrize').textContent = `${statsData.winnerPrize || 0}€`;
@@ -1100,10 +1122,10 @@
         html += '<tbody>';
 
         data.bets.forEach(bet => {
-          const dateKey = bet.date.includes('T') ? bet.date.split('T')[0] : bet.date;
-          const d = new Date(dateKey + 'T12:00:00');
-          const formatted = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-          const odds = statsData.odds?.[dateKey] || statsData.odds?.[bet.date] || '-';
+          const dateKey = normalizeDate(bet.date);
+          const dObj = new Date(dateKey + 'T12:00:00');
+          const formatted = dObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+          const odds = statsData.odds?.[dateKey] || '-';
 
           html += `<tr>
             <td>${escapeHtml(bet.name)}</td>
