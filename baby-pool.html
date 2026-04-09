@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>¿Cuándo nacerá el bebé? 🍼</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍼</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -937,9 +938,8 @@
     <div class="modal">
       <div class="modal-icon">🎉</div>
       <h3>¡Apuesta registrada!</h3>
-      <p>Tu código de apuesta es:</p>
-      <div class="bet-id" id="modalBetId">---</div>
       <p>Ahora envía un <strong>Bizum</strong> al <strong>687 772 574</strong> con tu nombre en el concepto.</p>
+      <p>Si prefieres, también puedes <strong>hacer el pago en efectivo</strong> directamente.</p>
       <p>Tu apuesta se confirmará una vez validado el pago. 🤞</p>
       <button class="btn-close" onclick="closeModal()">¡Entendido! 👍</button>
     </div>
@@ -1102,7 +1102,7 @@
         if (!data.bets || data.bets.length === 0) return;
 
         let html = '<table class="bets-table">';
-        html += '<thead><tr><th>Nombre</th><th>Fecha</th><th>Apuesta</th><th>Premio est.</th></tr></thead>';
+        html += '<thead><tr><th>Nombre</th><th>Fecha</th><th>Premio est.</th></tr></thead>';
         html += '<tbody>';
 
         data.bets.forEach(bet => {
@@ -1116,7 +1116,6 @@
           html += `<tr>
             <td>${escapeHtml(bet.name)}</td>
             <td>${formatted}</td>
-            <td>${bet.amount}€</td>
             <td><span class="odds-badge">${estPrize}€</span></td>
           </tr>`;
         });
@@ -1158,7 +1157,6 @@
         const data = await resp.json();
 
         if (data.success) {
-          document.getElementById('modalBetId').textContent = data.id;
           document.getElementById('successModal').classList.add('active');
 
           // Reset form
