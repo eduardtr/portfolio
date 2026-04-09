@@ -839,7 +839,7 @@
         <div class="rule-icon">2️⃣</div>
         <div class="rule-text">
           <strong>Haz tu Bizum</strong>
-          Cada participación cuesta 1€. Puedes comprar varias. Envía un Bizum al 687 772 574 con tu nombre.
+          La apuesta cuesta 2€. Envía un Bizum al 687 772 574 con tu nombre.
         </div>
       </div>
 
@@ -855,15 +855,15 @@
         <div class="rule-icon">4️⃣</div>
         <div class="rule-text">
           <strong>¡A esperar!</strong>
-          El 50% del bote será para el bebé 🍼 y el otro 50% para el ganador 🏆. Si varias personas aciertan, se reparte.
+          El 50% del bote será para el bebé 🍼 y el otro 50% para el ganador 🏆. Si varias personas aciertan, se reparte a partes iguales.
         </div>
       </div>
 
       <div class="rule">
-        <div class="rule-icon">📈</div>
+        <div class="rule-icon">🚫</div>
         <div class="rule-text">
-          <strong>Premios dinámicos</strong>
-          Si muchas personas apuestan por la misma fecha, el premio se reparte. ¡Las fechas menos populares pagan más!
+          <strong>Una sola apuesta</strong>
+          Cada persona solo puede apostar una vez. ¡No se admiten duplicados!
         </div>
       </div>
     </section>
@@ -886,11 +886,9 @@
         </div>
 
         <div class="form-group">
-          <label>💶 Participaciones (1€ cada una)</label>
-          <div class="amount-selector">
-            <button type="button" class="amount-btn" onclick="changeAmount(-1)">−</button>
-            <div class="amount-display"><span id="betAmount">1</span>€</div>
-            <button type="button" class="amount-btn" onclick="changeAmount(1)">+</button>
+          <label>💶 Importe</label>
+          <div style="text-align:center; padding: 14px; background: var(--accent-light); border-radius: 12px; font-size: 1.5rem; font-weight: 800; color: var(--text);">
+            2€ <span style="font-size:0.9rem; font-weight: 600; color: var(--text-light);">(una única apuesta)</span>
           </div>
         </div>
 
@@ -957,7 +955,6 @@
     // State
     // ============================================================
     let selectedDate = null;
-    let betAmount = 1;
     let statsData = {};
 
     // Normalize any date representation to YYYY-MM-DD in local timezone
@@ -1059,34 +1056,22 @@
     function updatePrizePreview(dateStr) {
       const preview = document.getElementById('prizePreview');
       const currentPool = statsData.totalPool || 0;
-      const myAmount = betAmount; // participaciones del usuario
-      const newPool = currentPool + myAmount;
+      const newPool = currentPool + 2;
       const winnerPrize = newPool * 0.5;
-      const existingBets = statsData.dateCounts?.[dateStr] || 0;
-      // Total participaciones para este día = existentes + las del usuario
-      const totalForDate = existingBets + myAmount;
-      const myPrize = Math.round((myAmount / totalForDate) * winnerPrize);
+      const existingPersons = statsData.dateCounts?.[dateStr] || 0;
+      const totalForDate = existingPersons + 1;
+      const myPrize = Math.round(winnerPrize / totalForDate);
 
       document.getElementById('prizeValue').textContent = myPrize + '€';
-      if (existingBets > 0) {
-        document.getElementById('prizeDetail').textContent = `${existingBets} participación${existingBets > 1 ? 'es' : ''} ya en este día — tu parte: ${myAmount} de ${totalForDate}`;
+      if (existingPersons > 0) {
+        document.getElementById('prizeDetail').textContent = `${existingPersons} persona${existingPersons > 1 ? 's' : ''} ya en este día — premio compartido`;
       } else {
-        document.getElementById('prizeDetail').textContent = `Nadie ha apostado por este día — te llevarías ${myPrize}€`;
+        document.getElementById('prizeDetail').textContent = `Nadie más ha apostado por este día — te llevarías todo 🎉`;
       }
       preview.style.display = 'block';
     }
 
-    // ============================================================
-    // Amount
-    // ============================================================
-    function changeAmount(delta) {
-      betAmount = Math.max(1, betAmount + delta);
-      document.getElementById('betAmount').textContent = betAmount;
-      // Recalculate prize preview with new amount
-      if (selectedDate) updatePrizePreview(selectedDate);
-    }
-
-    // ============================================================
+    // ===========================================================
     // API Calls
     // ============================================================
     async function loadStats() {
@@ -1125,8 +1110,8 @@
           const dObj = new Date(dateKey + 'T12:00:00');
           const formatted = dObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
           const winnerPrize = (statsData.totalPool || 0) * 0.5;
-          const dateBets = statsData.dateCounts?.[dateKey] || 1;
-          const estPrize = Math.round((bet.amount / dateBets) * winnerPrize);
+          const datePersons = statsData.dateCounts?.[dateKey] || 1;
+          const estPrize = Math.round(winnerPrize / datePersons);
 
           html += `<tr>
             <td>${escapeHtml(bet.name)}</td>
@@ -1166,7 +1151,7 @@
             action: 'placeBet',
             name: name,
             date: selectedDate,
-            amount: betAmount
+            amount: 2
           })
         });
 
@@ -1179,8 +1164,6 @@
           // Reset form
           document.getElementById('betName').value = '';
           selectedDate = null;
-          betAmount = 1;
-          document.getElementById('betAmount').textContent = '1';
           document.querySelectorAll('.date-cell.selected').forEach(c => c.classList.remove('selected'));
 
           // Reload data
