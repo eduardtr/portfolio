@@ -423,7 +423,26 @@
     }
 
     .bets-table tr:hover td {
-      background: var(--bg);
+      background: var(--accent-light);
+    }
+
+    .bets-table tr.bet-pending td {
+      opacity: 0.6;
+      font-style: italic;
+    }
+
+    .bets-table tr.bet-pending:hover td {
+      opacity: 0.85;
+    }
+
+    .pending-badge {
+      font-size: 0.85em;
+    }
+
+    .pending-text {
+      font-size: 0.8rem;
+      color: var(--text-accent);
+      font-style: italic;
     }
 
     .odds-badge {
@@ -704,6 +723,14 @@
       color: var(--text);
     }
 
+    .date-cell.has-pending {
+      border: 2px dashed var(--accent);
+    }
+
+    .date-cell.has-pending .day-info {
+      color: var(--text-accent);
+    }
+
     .prize-preview {
       background: var(--accent-light);
       border: 2px solid var(--accent);
@@ -742,7 +769,10 @@
       .stats-bar { grid-template-columns: repeat(3, 1fr); gap: 8px; }
       .stat-card { padding: 15px; }
       .echo-frame { width: 200px; height: 200px; }
-      .date-cell { font-size: 0.75rem; }
+      .date-grid { gap: 4px; }
+      .date-cell { font-size: 0.9rem; min-height: 52px; }
+      .date-cell .bet-count { width: 20px; height: 20px; line-height: 20px; font-size: 0.65rem; top: 3px; right: 3px; }
+      .date-cell .day-info { font-size: 0.6rem; }
       .countdown-value { width: 50px; height: 50px; line-height: 50px; font-size: 1.5rem; }
     }
 
@@ -1017,18 +1047,24 @@
           extra = ' title="Fecha no disponible"';
         }
 
-        const betCount = statsData.dateCounts?.[dateStr] || 0;
-        if (betCount > 0 && dateStr !== excludedDate) {
+        const approvedCount = statsData.dateCounts?.[dateStr] || 0;
+        const pendingCount = statsData.pendingDateCounts?.[dateStr] || 0;
+        const totalCount = approvedCount + pendingCount;
+        const hasPending = pendingCount > 0;
+
+        if (totalCount > 0 && dateStr !== excludedDate) {
           classes += ' has-bets';
-          extra += ` data-bets="${betCount}"`;
+          if (hasPending) classes += ' has-pending';
+          extra += ` data-bets="${totalCount}"`;
         }
 
         html += `<div class="${classes}" data-date="${dateStr}"${extra} onclick="selectDate(this, '${dateStr}')">`;
         html += `<span>${day}</span>`;
-        if (betCount > 0 && dateStr !== excludedDate) {
-          html += `<span class="bet-count">${betCount}</span>`;
-          const prizePerPerson = betCount > 0 ? Math.round(winnerPrize / betCount) : 0;
-          html += `<span class="day-info">${betCount}p · ${prizePerPerson}€</span>`;
+        if (totalCount > 0 && dateStr !== excludedDate) {
+          html += `<span class="bet-count">${totalCount}</span>`;
+          const prizePerPerson = approvedCount > 0 ? Math.round(winnerPrize / approvedCount) : 0;
+          const pendingNote = hasPending ? '⏳' : '';
+          html += `<span class="day-info">${approvedCount}p · ${prizePerPerson}€ ${pendingNote}</span>`;
         } else if (dateStr !== excludedDate) {
           html += `<span class="day-info">${winnerPrize > 0 ? Math.round(winnerPrize) + '€' : ''}</span>`;
         }
@@ -1112,11 +1148,12 @@
           const winnerPrize = (statsData.totalPool || 0) * 0.5;
           const datePersons = statsData.dateCounts?.[dateKey] || 1;
           const estPrize = Math.round(winnerPrize / datePersons);
+          const isPending = bet.status === 'pending';
 
-          html += `<tr>
-            <td>${escapeHtml(bet.name)}</td>
+          html += `<tr class="${isPending ? 'bet-pending' : ''}">
+            <td>${escapeHtml(bet.name)}${isPending ? ' <span class="pending-badge">⏳</span>' : ''}</td>
             <td>${formatted}</td>
-            <td><span class="odds-badge">${estPrize}€</span></td>
+            <td>${isPending ? '<span class="pending-text">Pendiente</span>' : '<span class="odds-badge">' + estPrize + '€</span>'}</td>
           </tr>`;
         });
 
