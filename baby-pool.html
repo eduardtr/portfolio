@@ -468,16 +468,7 @@
 
     /* Rules */
     .rules-section {
-      background: var(--white);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 30px;
-      margin: 20px 0;
-    }
-
-    .rules-section h2 {
-      text-align: center;
-      margin-bottom: 20px;
+      display: none;
     }
 
     .rule {
@@ -922,7 +913,7 @@
         <div class="form-group">
           <label>💶 Importe</label>
           <div style="text-align:center; padding: 14px; background: var(--accent-light); border-radius: 12px; font-size: 1.5rem; font-weight: 800; color: var(--text);">
-            2€ <span style="font-size:0.9rem; font-weight: 600; color: var(--text-light);">(una única apuesta)</span>
+            2€ <span style="font-size:0.9rem; font-weight: 600; color: var(--text-light);"></span>
           </div>
         </div>
 
@@ -939,7 +930,7 @@
         <div class="payment-info">
           <div class="payment-icon">📱</div>
           <p>
-            Una vez hecha la apuesta, haz un <strong>Bizum</strong> para validar tu participación:
+            Una vez hecha la apuesta, haz un <strong>Bizum</strong> o paga en efectivo para validar tu participación:
           </p>
           <div class="bizum-number" onclick="copyBizum()" title="Copiar número">
             687 772 574
@@ -1140,11 +1131,16 @@
 
         if (!data.bets || data.bets.length === 0) return;
 
+        // Sort: confirmed first (by date asc), then pending (by date asc)
+        const confirmed = data.bets.filter(b => b.status === 'approved').sort((a, b) => a.date.localeCompare(b.date));
+        const pending = data.bets.filter(b => b.status === 'pending').sort((a, b) => a.date.localeCompare(b.date));
+        const sorted = [...confirmed, ...pending];
+
         let html = '<table class="bets-table">';
         html += '<thead><tr><th>Nombre</th><th>Fecha</th><th>Premio est.</th></tr></thead>';
         html += '<tbody>';
 
-        data.bets.forEach(bet => {
+        sorted.forEach(bet => {
           const dateKey = normalizeDate(bet.date);
           const dObj = new Date(dateKey + 'T12:00:00');
           const formatted = dObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
