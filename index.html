@@ -1,145 +1,1258 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Eduard Torres Romero</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Cuándo nacerá el bebé? 🍼</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍼</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary-color: #0066ff;
-      --bg-color: #f9f9f9;
-      --text-color: #333;
-      --card-bg: #fff;
-      --card-shadow: rgba(0, 0, 0, 0.05);
+      --bg: #FFFBF8;
+      --bg-dark: #DED8CD;
+      --text: #907D5A;
+      --text-light: #b8a88a;
+      --white: #ffffff;
+      --accent: #DED8CD;
+      --accent-light: #f5f0e8;
+      --shadow: 0 4px 20px rgba(144, 125, 90, 0.1);
+      --shadow-hover: 0 8px 30px rgba(144, 125, 90, 0.15);
+      --radius: 20px;
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Outfit', sans-serif;
-      margin: 0;
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      font-family: 'Nunito', sans-serif;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--bg) 0px,
+        var(--bg) 40px,
+        var(--white) 40px,
+        var(--white) 80px
+      );
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    header {
-      background-color: #ffffff;
-      text-align: center;
-      padding: 3rem 1rem 2rem;
-      box-shadow: 0 2px 8px var(--card-shadow);
+    /* Scalloped border frame */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+      border: 20px solid transparent;
+      border-image: repeating-linear-gradient(
+        45deg,
+        var(--bg-dark) 0px,
+        var(--bg-dark) 10px,
+        transparent 10px,
+        transparent 20px
+      ) 20;
+      border-image-slice: 20;
     }
 
-    header img {
-      width: 140px;
-      height: 140px;
-      object-fit: cover;
+    /* Floating shapes background */
+    .bubbles {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bubble {
+      position: absolute;
       border-radius: 50%;
-      border: 4px solid var(--primary-color);
-      margin-bottom: 1rem;
+      opacity: 0.08;
+      animation: float linear infinite;
     }
 
-    h1 {
-      margin: 0;
+    @keyframes float {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 0.08; }
+      90% { opacity: 0.08; }
+      100% { transform: translateY(-100px) scale(1); opacity: 0; }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 40px 20px 30px;
+    }
+
+    .header-emoji {
+      font-size: 4rem;
+      animation: bounce 2s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .header h1 {
       font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--text);
+      margin: 10px 0;
+      line-height: 1.2;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      color: var(--text-light);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* Echo photo section */
+    .echo-section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 30px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .echo-frame {
+      width: 280px;
+      height: 280px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 6px solid var(--accent-light);
+      box-shadow: 0 0 30px rgba(144, 125, 90, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--accent-light), var(--accent-light));
+    }
+
+    .echo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .echo-placeholder {
+      font-size: 5rem;
+      opacity: 0.6;
+    }
+
+    .echo-section h2 {
+      font-size: 1.3rem;
+      color: var(--text);
+      margin-bottom: 5px;
+    }
+
+    .echo-section p {
+      color: var(--text-light);
+      font-size: 0.95rem;
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 20px 15px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .stat-card .stat-icon {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+
+    .stat-card .stat-value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Bet form */
+    .bet-section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 30px;
+      margin: 20px 0;
+    }
+
+    .bet-section h2 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 5px;
+    }
+
+    .bet-section .subtitle {
+      text-align: center;
+      color: var(--text-light);
+      font-size: 0.9rem;
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--accent-light);
+      border-radius: 12px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--white);
+      transition: border-color 0.3s, box-shadow 0.3s;
+      outline: none;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(144, 125, 90, 0.15);
+    }
+
+    .amount-selector {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .amount-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 2px solid var(--accent-light);
+      background: var(--white);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .amount-btn:hover {
+      background: var(--accent-light);
+    }
+
+    .amount-display {
+      flex: 1;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--text));
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(144, 125, 90, 0.3);
+      margin-top: 10px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(144, 125, 90, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Payment info */
+    .payment-info {
+      background: var(--accent-light);
+      border: 2px solid var(--accent);
+      border-radius: 14px;
+      padding: 18px;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .payment-info .payment-icon {
+      font-size: 2rem;
+      margin-bottom: 5px;
+    }
+
+    .payment-info p {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .payment-info strong {
+      color: var(--text);
+    }
+
+    .bizum-number {
+      display: inline-block;
+      background: var(--white);
+      padding: 8px 20px;
+      border-radius: 10px;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text);
+      margin: 8px 0;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid var(--accent);
+    }
+
+    .bizum-number:hover {
+      background: var(--accent);
+    }
+
+    .copied-toast {
+      display: none;
+      font-size: 0.8rem;
+      color: var(--text);
       font-weight: 700;
     }
 
-    p.subtitle {
-      font-size: 1.2rem;
-      margin: 0.5rem 0 1.5rem;
-      color: #555;
+    /* Bets table */
+    .bets-section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 30px;
+      margin: 20px 0;
     }
 
-    section.intro {
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 1.5rem;
-      font-size: 1.1rem;
-      line-height: 1.7;
+    .bets-section h2 {
       text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
     }
 
-    .projects {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 2rem;
-      padding: 2rem 1.5rem;
+    .bets-table {
+      width: 100%;
+      border-collapse: collapse;
     }
 
-    .card {
-      background-color: var(--card-bg);
-      border-radius: 16px;
-      box-shadow: 0 8px 20px var(--card-shadow);
-      width: 300px;
+    .bets-table th {
+      background: var(--accent-light);
+      padding: 12px 15px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text);
+      font-weight: 700;
       text-align: left;
-      padding: 1.5rem;
-      transition: transform 0.3s ease;
     }
 
-    .card:hover {
-      transform: translateY(-6px);
+    .bets-table th:first-child {
+      border-radius: 10px 0 0 10px;
     }
 
-    .card h3 {
-      color: var(--primary-color);
-      margin-top: 0;
+    .bets-table th:last-child {
+      border-radius: 0 10px 10px 0;
     }
 
-    .card p {
-      font-size: 1rem;
-      color: #555;
+    .bets-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--accent-light);
+      font-size: 0.95rem;
     }
 
-    .card a {
+    .bets-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .bets-table tr:hover td {
+      background: var(--bg);
+    }
+
+    .odds-badge {
       display: inline-block;
-      margin-top: 1rem;
-      text-decoration: none;
-      font-weight: 500;
-      color: var(--primary-color);
+      background: linear-gradient(135deg, var(--accent-light), var(--accent));
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--text);
     }
 
-    footer {
+    .no-bets {
       text-align: center;
-      padding: 2rem 1rem;
-      color: #888;
-      font-size: 0.9rem;
+      padding: 40px;
+      color: var(--text-light);
+    }
+
+    .no-bets .no-bets-icon {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    /* Rules */
+    .rules-section {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 30px;
+      margin: 20px 0;
+    }
+
+    .rules-section h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .rule {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+      align-items: flex-start;
+    }
+
+    .rule-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      width: 45px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--accent-light);
+      border-radius: 12px;
+    }
+
+    .rule-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .rule-text strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* Success modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(144, 125, 90, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 40px 30px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      animation: modalIn 0.3s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { transform: scale(0.9) translateY(20px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .modal .modal-icon {
+      font-size: 4rem;
+      margin-bottom: 15px;
+    }
+
+    .modal h3 {
+      font-size: 1.4rem;
+      margin-bottom: 10px;
+    }
+
+    .modal p {
+      color: var(--text-light);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .modal .bet-id {
+      display: inline-block;
+      background: var(--accent-light);
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-family: monospace;
+      font-size: 1.1rem;
+      margin: 10px 0;
+    }
+
+    .modal .btn-close {
+      margin-top: 20px;
+      padding: 12px 40px;
+      background: var(--accent-light);
+      color: var(--text);
+      border: none;
+      border-radius: 12px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .modal .btn-close:hover {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--text-light);
+      font-size: 0.85rem;
+    }
+
+    /* Countdown */
+    .countdown {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 15px 0;
+    }
+
+    .countdown-item {
+      text-align: center;
+    }
+
+    .countdown-value {
+      display: block;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text);
+      background: var(--white);
+      width: 60px;
+      height: 60px;
+      line-height: 60px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .countdown-label {
+      font-size: 0.7rem;
+      color: var(--text-light);
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-top: 5px;
+    }
+
+    /* Date grid for visual calendar */
+    .date-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin: 15px 0;
+    }
+
+    .date-grid .day-header {
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-light);
+      text-transform: uppercase;
+      padding: 5px 0;
+    }
+
+    .date-cell {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+      position: relative;
+    }
+
+    .date-cell:hover:not(.disabled):not(.excluded) {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .date-cell.selected {
+      background: linear-gradient(135deg, var(--accent), var(--text));
+      color: white;
+      border-color: var(--text);
+    }
+
+    .date-cell.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .date-cell.excluded {
+      background: var(--text-light);
+      color: white;
+      opacity: 0.4;
+      cursor: not-allowed;
+      text-decoration: line-through;
+    }
+
+    .date-cell.has-bets {
+      background: var(--accent-light);
+    }
+
+    .date-cell.has-bets.selected {
+      background: linear-gradient(135deg, var(--accent), var(--text));
+      color: white;
+    }
+
+    .date-cell .bet-count {
+      font-size: 0.55rem;
+      background: var(--text);
+      color: white;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+      text-align: center;
+      position: absolute;
+      top: 2px;
+      right: 2px;
+    }
+
+    .date-cell .day-info {
+      font-size: 0.45rem;
+      color: var(--text-light);
+      line-height: 1.2;
+      margin-top: 1px;
+    }
+
+    .date-cell.selected .day-info {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .date-cell.has-bets .day-info {
+      color: var(--text);
+    }
+
+    .prize-preview {
+      background: var(--accent-light);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 14px;
+      margin-top: 12px;
+      text-align: center;
+      display: none;
+    }
+
+    .prize-preview .prize-label {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      margin-bottom: 4px;
+    }
+
+    .prize-preview .prize-value {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .prize-preview .prize-detail {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+
+    .date-cell.empty {
+      cursor: default;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .header h1 { font-size: 1.7rem; }
+      .stats-bar { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stat-card { padding: 15px; }
+      .echo-frame { width: 200px; height: 200px; }
+      .date-cell { font-size: 0.75rem; }
+      .countdown-value { width: 50px; height: 50px; line-height: 50px; font-size: 1.5rem; }
+    }
+
+    /* Loading spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <img src="https://media.licdn.com/dms/image/v2/D4E03AQEX1HENoQgbuw/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1664463044281?e=1750896000&v=beta&t=T8QBJcC8_9eSJFsNYE2NffwsjfughTg2WR-kcccrtwk" alt="Eduard Torres Romero" />
-    <h1>¡Hola, soy Eduard! 👋</h1>
-    <p class="subtitle">Ingeniero de telecos y emprendedor</p>
-  </header>
+  <!-- Floating bubbles -->
+  <div class="bubbles" id="bubbles"></div>
 
-  <section class="intro">
-    <p>
-      Apasionado de la tecnología, la creatividad y las buenas ideas. Estudié <strong>Ingeniería de Telecomunicaciones</strong> en la UPC e hice un máster de Business Intelligence e Innovación en la EAE. Desde entonces he estado mezclando el mundo de los datos, el software y la innovación.
-    </p>
-    <p>
-      Me encanta resolver problemas, automatizar procesos, analizar datos y lanzar proyectos que aporten valor. Aquí te comparto dos de mis creaciones: uno para encontrar la <em>gasolinera más barata</em> cerca de ti, y otro que te regala una <em>dosis diaria de cultura general</em>.
-    </p>
-  </section>
+  <div class="container">
 
-  <section class="projects">
-    <div class="card">
-      <h3>⛽ Buscador de Gasolineras</h3>
-      <p>Consulta en tiempo real las gasolineras más baratas según tu ubicación. Ahorra y planifica mejor tus desplazamientos.</p>
-      <a href="http://eduardtorres.com/gasolina-mas-barata.html" target="_blank">Ver proyecto →</a>
+    <!-- Header -->
+    <header class="header">
+      <div class="header-emoji">👶</div>
+      <h1>¿Cuándo nacerá el bebé?</h1>
+      <p>¡Haz tu apuesta y demuestra tu instinto! 🎯</p>
+
+      <div class="countdown" id="countdown">
+        <div class="countdown-item">
+          <span class="countdown-value" id="cd-days">--</span>
+          <span class="countdown-label">Días</span>
+        </div>
+        <div class="countdown-item">
+          <span class="countdown-value" id="cd-hours">--</span>
+          <span class="countdown-label">Horas</span>
+        </div>
+        <div class="countdown-item">
+          <span class="countdown-value" id="cd-mins">--</span>
+          <span class="countdown-label">Min</span>
+        </div>
+        <div class="countdown-item">
+          <span class="countdown-value" id="cd-secs">--</span>
+          <span class="countdown-label">Seg</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Echo photo -->
+    <section class="echo-section">
+      <div class="echo-frame">
+        <!-- Replace src with your echo photo -->
+        <img src="assets/echo.jpg" alt="Ecografía del bebé">
+      </div>
+      <h2>¡Ya queda poquito! 💕</h2>
+      <p>Fecha prevista: <strong>2 de septiembre de 2026</strong></p>
+    </section>
+
+    <!-- Stats -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-card">
+        <div class="stat-icon">🎰</div>
+        <div class="stat-value" id="statBets">0</div>
+        <div class="stat-label">Apuestas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-value" id="statPool">0€</div>
+        <div class="stat-label">Bote total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-value" id="statPrize">0€</div>
+        <div class="stat-label">Premio</div>
+      </div>
     </div>
 
-    <div class="card">
-      <h3>📚 Píldoras de Cultura</h3>
-      <p>Mini-artículos diarios con curiosidades, historia, ciencia y más. Aprende algo nuevo cada día en menos de 1 minuto.</p>
-      <a href="http://eduardtorres.com/pildora-cultural.html" target="_blank">Ver proyecto →</a>
+    <!-- Rules -->
+    <section class="rules-section">
+      <h2>📜 ¿Cómo funciona?</h2>
+
+      <div class="rule">
+        <div class="rule-icon">1️⃣</div>
+        <div class="rule-text">
+          <strong>Elige una fecha</strong>
+          Selecciona el día en el que crees que nacerá el bebé (del 15 de agosto al 15 de septiembre).
+        </div>
+      </div>
+
+      <div class="rule">
+        <div class="rule-icon">2️⃣</div>
+        <div class="rule-text">
+          <strong>Haz tu Bizum</strong>
+          La apuesta cuesta 2€. Envía un Bizum al 687 772 574 con tu nombre.
+        </div>
+      </div>
+
+      <div class="rule">
+        <div class="rule-icon">3️⃣</div>
+        <div class="rule-text">
+          <strong>Validamos tu pago</strong>
+          Una vez confirmado el Bizum, tu apuesta aparecerá como confirmada en la web.
+        </div>
+      </div>
+
+      <div class="rule">
+        <div class="rule-icon">4️⃣</div>
+        <div class="rule-text">
+          <strong>¡A esperar!</strong>
+          El 50% del bote será para el bebé 🍼 y el otro 50% para el ganador 🏆. Si varias personas aciertan, se reparte a partes iguales.
+        </div>
+      </div>
+
+      <div class="rule">
+        <div class="rule-icon">🚫</div>
+        <div class="rule-text">
+          <strong>Una sola apuesta</strong>
+          Cada persona solo puede apostar una vez. ¡No se admiten duplicados!
+        </div>
+      </div>
+    </section>
+
+    <!-- Bet Form -->
+    <section class="bet-section">
+      <h2>🎲 ¡Haz tu apuesta!</h2>
+      <p class="subtitle">Elige la fecha en la que crees que nacerá</p>
+
+      <form id="betForm" onsubmit="return false;">
+        <div class="form-group">
+          <label for="betName">👤 Tu nombre</label>
+          <input type="text" id="betName" placeholder="¿Cómo te llamas?" required autocomplete="name">
+        </div>
+
+        <div class="form-group">
+          <label>📅 Elige la fecha (15 ago — 15 sep)</label>
+          <div id="calendarContainer"></div>
+          <input type="hidden" id="betDate" required>
+        </div>
+
+        <div class="form-group">
+          <label>💶 Importe</label>
+          <div style="text-align:center; padding: 14px; background: var(--accent-light); border-radius: 12px; font-size: 1.5rem; font-weight: 800; color: var(--text);">
+            2€ <span style="font-size:0.9rem; font-weight: 600; color: var(--text-light);">(una única apuesta)</span>
+          </div>
+        </div>
+
+        <div class="prize-preview" id="prizePreview">
+          <div class="prize-label">🏆 Premio si aciertas este día</div>
+          <div class="prize-value" id="prizeValue">0€</div>
+          <div class="prize-detail" id="prizeDetail"></div>
+        </div>
+
+        <button type="submit" class="btn-primary" id="submitBtn" onclick="placeBet()">
+          ¡Apostar! 🍀
+        </button>
+
+        <div class="payment-info">
+          <div class="payment-icon">📱</div>
+          <p>
+            Una vez hecha la apuesta, haz un <strong>Bizum</strong> para validar tu participación:
+          </p>
+          <div class="bizum-number" onclick="copyBizum()" title="Copiar número">
+            687 772 574
+          </div>
+          <div class="copied-toast" id="copiedToast">¡Copiado! 📋</div>
+          <p>Indica tu <strong>nombre</strong> en el concepto del Bizum.</p>
+        </div>
+      </form>
+    </section>
+
+    <!-- Current Bets -->
+    <section class="bets-section">
+      <h2>📊 Apuestas confirmadas</h2>
+      <div id="betsContainer">
+        <div class="no-bets">
+          <div class="no-bets-icon">🦗</div>
+          <p>Aún no hay apuestas confirmadas.<br>¡Sé el primero!</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Hecho con 💕 para el bebé · 2026
+    </footer>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal">
+      <div class="modal-icon">🎉</div>
+      <h3>¡Apuesta registrada!</h3>
+      <p>Ahora envía un <strong>Bizum</strong> al <strong>687 772 574</strong> con tu nombre en el concepto.</p>
+      <p>Si prefieres, también puedes <strong>hacer el pago en efectivo</strong> directamente.</p>
+      <p>Tu apuesta se confirmará una vez validado el pago. 🤞</p>
+      <button class="btn-close" onclick="closeModal()">¡Entendido! 👍</button>
     </div>
-  </section>
+  </div>
 
-  <footer>
-    © 2025 Eduard Torres Romero · eduard.torres.romero@me.com · Barcelona
-  </footer>
+  <script>
+    // ============================================================
+    // CONFIG — Replace this URL with your deployed Apps Script URL
+    // ============================================================
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxcToDpECINjvS3jyV8WcmZW_7yeYRyldMminyOOS5FeJ8D1P1Z4HB4Mh6q9apHoDnD/exec';
 
+    // ============================================================
+    // State
+    // ============================================================
+    let selectedDate = null;
+    let statsData = {};
+
+    // Normalize any date representation to YYYY-MM-DD in local timezone
+    function normalizeDate(val) {
+      const d = new Date(val);
+      if (isNaN(d)) return val;
+      return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+    }
+
+    // Re-key an object so all date keys become YYYY-MM-DD
+    function normalizeDateKeys(obj) {
+      if (!obj || typeof obj !== 'object') return {};
+      const out = {};
+      for (const [k, v] of Object.entries(obj)) {
+        out[normalizeDate(k)] = v;
+      }
+      return out;
+    }
+    // ============================================================
+    // Calendar
+    // ============================================================
+    function buildCalendar() {
+      const container = document.getElementById('calendarContainer');
+      const startDate = new Date(2026, 7, 15); // Aug 15
+      const endDate = new Date(2026, 8, 15);   // Sep 15
+      const excludedDate = '2026-09-02';
+      const totalPool = statsData.totalPool || 0;
+      const winnerPrize = totalPool * 0.5;
+
+      const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+      let html = '<div class="date-grid">';
+      dayNames.forEach(d => {
+        html += `<div class="day-header">${d}</div>`;
+      });
+
+      // Pad start to align with day of week (Mon=0)
+      const startDay = (startDate.getDay() + 6) % 7; // Convert Sun=0 to Mon=0
+      for (let i = 0; i < startDay; i++) {
+        html += '<div class="date-cell empty"></div>';
+      }
+
+      const current = new Date(startDate);
+      while (current <= endDate) {
+        const yyyy = current.getFullYear();
+        const mm = String(current.getMonth() + 1).padStart(2, '0');
+        const dd = String(current.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+        const day = current.getDate();
+        const month = current.getMonth();
+        const monthLabel = month === 7 ? 'ago' : 'sep';
+
+        let classes = 'date-cell';
+        let extra = '';
+
+        if (dateStr === excludedDate) {
+          classes += ' excluded';
+          extra = ' title="Fecha no disponible"';
+        }
+
+        const betCount = statsData.dateCounts?.[dateStr] || 0;
+        if (betCount > 0 && dateStr !== excludedDate) {
+          classes += ' has-bets';
+          extra += ` data-bets="${betCount}"`;
+        }
+
+        html += `<div class="${classes}" data-date="${dateStr}"${extra} onclick="selectDate(this, '${dateStr}')">`;
+        html += `<span>${day}</span>`;
+        if (betCount > 0 && dateStr !== excludedDate) {
+          html += `<span class="bet-count">${betCount}</span>`;
+          const prizePerPerson = betCount > 0 ? Math.round(winnerPrize / betCount) : 0;
+          html += `<span class="day-info">${betCount}p · ${prizePerPerson}€</span>`;
+        } else if (dateStr !== excludedDate) {
+          html += `<span class="day-info">${winnerPrize > 0 ? Math.round(winnerPrize) + '€' : ''}</span>`;
+        }
+        html += '</div>';
+
+        current.setDate(current.getDate() + 1);
+      }
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function selectDate(el, dateStr) {
+      if (el.classList.contains('excluded') || el.classList.contains('disabled') || el.classList.contains('empty')) return;
+
+      document.querySelectorAll('.date-cell.selected').forEach(c => c.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedDate = dateStr;
+      document.getElementById('betDate').value = dateStr;
+
+      // Show prize preview for selected date
+      updatePrizePreview(dateStr);
+    }
+
+    function updatePrizePreview(dateStr) {
+      const preview = document.getElementById('prizePreview');
+      const currentPool = statsData.totalPool || 0;
+      const newPool = currentPool + 2;
+      const winnerPrize = newPool * 0.5;
+      const existingPersons = statsData.dateCounts?.[dateStr] || 0;
+      const totalForDate = existingPersons + 1;
+      const myPrize = Math.round(winnerPrize / totalForDate);
+
+      document.getElementById('prizeValue').textContent = myPrize + '€';
+      if (existingPersons > 0) {
+        document.getElementById('prizeDetail').textContent = `${existingPersons} persona${existingPersons > 1 ? 's' : ''} ya en este día — premio compartido`;
+      } else {
+        document.getElementById('prizeDetail').textContent = `Nadie más ha apostado por este día — te llevarías todo 🎉`;
+      }
+      preview.style.display = 'block';
+    }
+
+    // ===========================================================
+    // API Calls
+    // ============================================================
+    async function loadStats() {
+      try {
+        const resp = await fetch(`${API_URL}?action=getStats`);
+        statsData = await resp.json();
+
+        // Normalize date keys from Apps Script format to YYYY-MM-DD
+        statsData.dateCounts = normalizeDateKeys(statsData.dateCounts);
+        statsData.odds = normalizeDateKeys(statsData.odds);
+
+        document.getElementById('statBets').textContent = statsData.totalBets || 0;
+        document.getElementById('statPool').textContent = `${statsData.totalPool || 0}€`;
+        document.getElementById('statPrize').textContent = `${statsData.winnerPrize || 0}€`;
+
+        buildCalendar();
+      } catch (e) {
+        console.warn('Could not load stats:', e);
+        buildCalendar();
+      }
+    }
+
+    async function loadBets() {
+      try {
+        const resp = await fetch(`${API_URL}?action=getBets`);
+        const data = await resp.json();
+
+        if (!data.bets || data.bets.length === 0) return;
+
+        let html = '<table class="bets-table">';
+        html += '<thead><tr><th>Nombre</th><th>Fecha</th><th>Premio est.</th></tr></thead>';
+        html += '<tbody>';
+
+        data.bets.forEach(bet => {
+          const dateKey = normalizeDate(bet.date);
+          const dObj = new Date(dateKey + 'T12:00:00');
+          const formatted = dObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+          const winnerPrize = (statsData.totalPool || 0) * 0.5;
+          const datePersons = statsData.dateCounts?.[dateKey] || 1;
+          const estPrize = Math.round(winnerPrize / datePersons);
+
+          html += `<tr>
+            <td>${escapeHtml(bet.name)}</td>
+            <td>${formatted}</td>
+            <td><span class="odds-badge">${estPrize}€</span></td>
+          </tr>`;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('betsContainer').innerHTML = html;
+      } catch (e) {
+        console.warn('Could not load bets:', e);
+      }
+    }
+
+    async function placeBet() {
+      const name = document.getElementById('betName').value.trim();
+      if (!name) {
+        alert('¡Escribe tu nombre!');
+        return;
+      }
+      if (!selectedDate) {
+        alert('¡Selecciona una fecha en el calendario!');
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Enviando...';
+
+      try {
+        const resp = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'placeBet',
+            name: name,
+            date: selectedDate,
+            amount: 2
+          })
+        });
+
+        const data = await resp.json();
+
+        if (data.success) {
+          document.getElementById('successModal').classList.add('active');
+
+          // Reset form
+          document.getElementById('betName').value = '';
+          selectedDate = null;
+          document.querySelectorAll('.date-cell.selected').forEach(c => c.classList.remove('selected'));
+
+          // Reload data
+          loadStats();
+          loadBets();
+        } else {
+          alert(data.error || 'Error al registrar la apuesta');
+        }
+      } catch (e) {
+        alert('Error de conexión. Inténtalo de nuevo.');
+        console.error(e);
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '¡Apostar! 🍀';
+    }
+
+    // ============================================================
+    // Helpers
+    // ============================================================
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function copyBizum() {
+      navigator.clipboard.writeText('687772574').then(() => {
+        const toast = document.getElementById('copiedToast');
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 2000);
+      });
+    }
+
+    function closeModal() {
+      document.getElementById('successModal').classList.remove('active');
+    }
+
+    // ============================================================
+    // Countdown to Sep 2 2026
+    // ============================================================
+    function updateCountdown() {
+      const target = new Date('2026-09-02T00:00:00+02:00');
+      const now = new Date();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        document.getElementById('countdown').innerHTML = '<p style="font-size:1.2rem;font-weight:700;">🎉 ¡El momento ha llegado!</p>';
+        return;
+      }
+
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+
+      document.getElementById('cd-days').textContent = days;
+      document.getElementById('cd-hours').textContent = hours.toString().padStart(2, '0');
+      document.getElementById('cd-mins').textContent = mins.toString().padStart(2, '0');
+      document.getElementById('cd-secs').textContent = secs.toString().padStart(2, '0');
+    }
+
+    // ============================================================
+    // Bubbles background
+    // ============================================================
+    function createBubbles() {
+      const container = document.getElementById('bubbles');
+      const colors = ['var(--accent)', 'var(--accent)', 'var(--accent)', 'var(--accent)'];
+
+      for (let i = 0; i < 15; i++) {
+        const bubble = document.createElement('div');
+        bubble.classList.add('bubble');
+        const size = Math.random() * 80 + 30;
+        bubble.style.width = size + 'px';
+        bubble.style.height = size + 'px';
+        bubble.style.left = Math.random() * 100 + '%';
+        bubble.style.background = colors[Math.floor(Math.random() * colors.length)];
+        bubble.style.animationDuration = (Math.random() * 15 + 10) + 's';
+        bubble.style.animationDelay = (Math.random() * 10) + 's';
+        container.appendChild(bubble);
+      }
+    }
+
+    // ============================================================
+    // Init
+    // ============================================================
+    createBubbles();
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+    loadStats();
+    loadBets();
+  </script>
 </body>
 </html>
