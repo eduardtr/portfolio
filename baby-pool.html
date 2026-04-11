@@ -773,7 +773,7 @@
       .stat-card { padding: 15px; }
       .echo-frame { width: 200px; height: 200px; }
       .date-grid { gap: 3px; overflow-x: auto; padding-bottom: 4px; }
-      .date-cell { font-size: 0.85rem; min-height: 56px; padding: 4px 2px; }
+      .date-cell { font-size: 0.85rem; min-height: 48px; padding: 2px 1px; }
       .date-cell .bet-count { width: 18px; height: 18px; line-height: 18px; font-size: 0.6rem; top: -8px; right: -4px; }
       .date-cell .day-info { font-size: 0.55rem; margin-top: 0; }
       .countdown-value { width: 50px; height: 50px; line-height: 50px; font-size: 1.5rem; }
@@ -1066,8 +1066,8 @@
         if (totalCount > 0 && dateStr !== excludedDate) {
           html += `<span class="bet-count">${totalCount}</span>`;
           const prizePerPerson = approvedCount > 0 ? Math.round(winnerPrize / approvedCount) : 0;
-          const pendingNote = hasPending ? '⏳' : '';
-          html += `<span class="day-info">${approvedCount}p · ${prizePerPerson}€ ${pendingNote}</span>`;
+          const pendingNote = hasPending ? '' : '';
+          html += `<span class="day-info">${approvedCount}p · ${prizePerPerson}€</span>`;
         } else if (dateStr !== excludedDate) {
           html += `<span class="day-info">${winnerPrize > 0 ? Math.round(winnerPrize) + '€' : ''}</span>`;
         }
@@ -1154,7 +1154,7 @@
           const isPending = bet.status === 'pending';
 
           html += `<tr class="${isPending ? 'bet-pending' : ''}">
-            <td>${escapeHtml(bet.name)}${isPending ? ' <span class="pending-badge">⏳</span>' : ''}</td>
+            <td>${escapeHtml(bet.name)}${isPending ? ' <span class="pending-badge">·</span>' : ''}</td>
             <td>${formatted}</td>
             <td>${isPending ? '<span class="pending-text">Pendiente</span>' : '<span class="odds-badge">' + estPrize + '€</span>'}</td>
           </tr>`;
