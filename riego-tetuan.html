@@ -472,9 +472,12 @@ function renderCalendar() {
   for (var day = 1; day <= daysInMonth; day++) {
     var dateStr = pad(day) + '/' + pad(currentMonth + 1) + '/' + currentYear;
     var isToday = (dateStr === todayStr);
+    var dayDate = new Date(currentYear, currentMonth, day);
+    var todayStart = new Date(); todayStart.setHours(0,0,0,0);
+    var isPast = dayDate < todayStart;
     var reserva = reservas.find(function(r) { return r.fecha === dateStr; });
     var isBooked = !!reserva;
-    var cell = makeCell(day, currentMonth, currentYear, false, isBooked, isToday, dateStr, reserva);
+    var cell = makeCell(day, currentMonth, currentYear, false, isBooked, isToday, dateStr, reserva, isPast);
     grid.appendChild(cell);
   }
 
