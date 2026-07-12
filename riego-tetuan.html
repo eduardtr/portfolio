@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riego — Comunidad Tetuan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green-dark:  #2d6a4f;
+      --green-light: #52b788;
+      --green-booked:#b7e4c7;
+      --amber:       #d4a017;
+      --bg:          #f0f7f4;
+      --text:        #1b1b1b;
+      --white:       #ffffff;
+      --radius:      12px;
+      --shadow:      0 4px 24px rgba(0,0,0,0.10);
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .header h1 span { font-size: 1.6rem; }
+    .header p {
+      margin-top: 8px;
+      color: #4a4a4a;
+      font-size: 0.95rem;
+      max-width: 480px;
+      line-height: 1.5;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    /* ── Calendario ── */
+    .cal-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .cal-nav button {
+      background: none;
+      border: 2px solid var(--green-light);
+      color: var(--green-dark);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .cal-nav button:hover { background: var(--green-dark); color: var(--white); border-color: var(--green-dark); }
+    .cal-nav h2 { font-size: 1.2rem; font-weight: 600; color: var(--green-dark); }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+    .cal-weekday {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #888;
+      padding: 4px 0 8px;
+    }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+    }
+    .cal-day.empty { cursor: default; }
+    .cal-day.available {
+      background: var(--white);
+      border: 1.5px solid #d1e7dd;
+      color: var(--text);
+    }
+    .cal-day.available:hover {
+      transform: scale(1.08);
+      box-shadow: 0 2px 8px rgba(45,106,79,0.2);
+      border-color: var(--green-dark);
+    }
+    .cal-day.booked {
+      background: var(--green-booked);
+      color: var(--green-dark);
+      font-weight: 600;
+      cursor: default;
+    }
+    .cal-day.out { opacity: 0.25; cursor: default; }
+    .cal-day.today {
+      border: 2px solid var(--amber) !important;
+      font-weight: 700;
+    }
+    .cal-day.booked.today {
+      border-color: var(--amber) !important;
+    }
+
+    /* ── Leyenda ── */
+    .legend {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 16px;
+      font-size: 0.82rem;
+      color: #666;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot {
+      width: 14px; height: 14px;
+      border-radius: 4px;
+    }
+    .legend-dot.free { background: var(--white); border: 1.5px solid #d1e7dd; }
+    .legend-dot.booked { background: var(--green-booked); }
+
+    /* ── Aviso ── */
+    .notice {
+      margin-top: 24px;
+      background: #e9f5ef;
+      border-left: 4px solid var(--green-dark);
+      border-radius: 0 8px 8px 0;
+      padding: 14px 16px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #2d5040;
+    }
+    .notice strong { display: block; margin-bottom: 4px; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      position: relative;
+      animation: slideUp 0.2s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .modal-close {
+      position: absolute;
+      top: 12px; right: 14px;
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      color: #aaa;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal h3 {
+      font-size: 1.2rem;
+      color: var(--green-dark);
+      margin-bottom: 6px;
+    }
+    .modal-date {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 5px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #c8e6d4;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-group input:focus { border-color: var(--green-dark); }
+    .btn-reserve {
+      width: 100%;
+      padding: 12px;
+      background: var(--green-dark);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 6px;
+    }
+    .btn-reserve:hover { background: #1b4332; }
+    .btn-reserve:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--green-dark);
+      color: var(--white);
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 200;
+      pointer-events: none;
+      text-align: center;
+      max-width: 90vw;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.error { background: #c0392b; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1><span>🌿</span> Riego — Comunidad Tetuan</h1>
+    <p>Reserva tu día para regar el césped y las zonas comunes. Sin reservas, el riego es libre y anyone puede hacerlo.</p>
+  </div>
+
+  <div class="card">
+    <div class="cal-nav">
+      <button id="prevMonth" aria-label="Mes anterior">&#8592;</button>
+      <h2 id="monthTitle"></h2>
+      <button id="nextMonth" aria-label="Mes siguiente">&#8594;</button>
+    </div>
+    <div class="cal-grid" id="calendar"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot free"></div> Disponible</div>
+      <div class="legend-item"><div class="legend-dot booked"></div> Reservado</div>
+    </div>
+    <div class="notice">
+      <strong>🕘 Horario de riego: 21:00 h</strong>
+      Riega el césped y también las plantas y arbustos de las zonas comunes. Respeta el horario para garantizar un riego uniforme y eficiente.
+    </div>
+  </div>
+
+  <div class="footer">Comunidad de vecinos Tetuan</div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <button class="modal-close" id="modalClose" aria-label="Cerrar">&#10005;</button>
+      <h3>Reservar día de riego</h3>
+      <p class="modal-date" id="modalDate"></p>
+      <form id="reserveForm">
+        <div class="form-group">
+          <label for="escalera">Escalera</label>
+          <input type="text" id="escalera" placeholder="Ej: A" maxlength="10" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="piso">Piso</label>
+          <input type="text" id="piso" placeholder="Ej: 3º" maxlength="10" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="puerta">Puerta</label>
+          <input type="text" id="puerta" placeholder="Ej: B" maxlength="10" autocomplete="off">
+        </div>
+        <button type="submit" class="btn-reserve" id="btnSubmit">Reservar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// CONFIG — Sustituye este URL por el de tu Apps Script desplegado
+// ─────────────────────────────────────────────────────────────────
+var API_URL = 'https://script.google.com/macros/s/TU_SCRIPT_ID/exec';
+
+// ─────────────────────────────────────────────────────────────────
+var currentYear, currentMonth;
+var reservas = [];  // {fecha: 'DD/MM/YYYY', escalera, piso, puerta}
+
+init();
+
+function init() {
+  var now = new Date();
+  currentYear  = now.getFullYear();
+  currentMonth = now.getMonth();
+  loadReservas();
+  bindEvents();
+}
+
+function bindEvents() {
+  document.getElementById('prevMonth').addEventListener('click', prevMonth);
+  document.getElementById('nextMonth').addEventListener('click', nextMonth);
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+  document.getElementById('reserveForm').addEventListener('submit', submitReserva);
+}
+
+function loadReservas() {
+  fetch(API_URL)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      reservas = data.reservas || [];
+      renderCalendar();
+    })
+    .catch(function() {
+      toast('Error al cargar reservas', true);
+      renderCalendar();
+    });
+}
+
+function prevMonth() {
+  currentMonth--;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  renderCalendar();
+}
+
+function nextMonth() {
+  currentMonth++;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  var monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('monthTitle').textContent = monthNames[currentMonth] + ' ' + currentYear;
+
+  var grid = document.getElementById('calendar');
+  grid.innerHTML = '';
+
+  // Días de la semana
+  ['Lu','Ma','Mi','Ju','Vi','Sá','Do'].forEach(function(d) {
+    var el = document.createElement('div');
+    el.className = 'cal-weekday';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  var today = new Date();
+  var todayStr = pad(today.getDate()) + '/' + pad(today.getMonth() + 1) + '/' + today.getFullYear();
+
+  var firstDay = new Date(currentYear, currentMonth, 1);
+  // Lu=0 .. Do=6  (ajustamos para que la semana empiece en Lunes)
+  var startDow = (firstDay.getDay() + 6) % 7;
+
+  var daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  var daysInPrev  = new Date(currentYear, currentMonth, 0).getDate();
+
+  // Celdas previas (días del mes anterior)
+  for (var i = startDow - 1; i >= 0; i--) {
+    var d = daysInPrev - i;
+    var cell = makeCell(d, currentMonth > 0 ? currentMonth : 11,
+                           currentMonth > 0 ? currentYear : currentYear - 1, true);
+    grid.appendChild(cell);
+  }
+
+  // Días del mes actual
+  for (var day = 1; day <= daysInMonth; day++) {
+    var dateStr = pad(day) + '/' + pad(currentMonth + 1) + '/' + currentYear;
+    var isToday = (dateStr === todayStr);
+    var isBooked = reservas.some(function(r) { return r.fecha === dateStr; });
+    var cell = makeCell(day, currentMonth, currentYear, false, isBooked, isToday, dateStr);
+    grid.appendChild(cell);
+  }
+
+  // Celdas siguientes
+  var totalCells = startDow + daysInMonth;
+  var remaining = (7 - (totalCells % 7)) % 7;
+  if (remaining === 0 && totalCells > 35) remaining = 7;
+  for (var j = 1; j <= remaining; j++) {
+    var nextM = currentMonth === 11 ? 0 : currentMonth + 1;
+    var nextY = currentMonth === 11 ? currentYear + 1 : currentYear;
+    var cell = makeCell(j, nextM, nextY, true);
+    grid.appendChild(cell);
+  }
+}
+
+function makeCell(day, month, year, out, isBooked, isToday, dateStr) {
+  var el = document.createElement('div');
+  el.className = 'cal-day';
+  if (out) {
+    el.classList.add('out');
+  } else {
+    el.classList.add(isBooked ? 'booked' : 'available');
+    if (isToday) el.classList.add('today');
+    if (!isBooked) {
+      el.addEventListener('click', function(ds) {
+        return function() { openModal(ds); };
+      }(dateStr));
+    } else {
+      el.addEventListener('click', function() { toast('Este día ya está reservado', true); });
+    }
+  }
+  el.textContent = day;
+  return el;
+}
+
+function openModal(dateStr) {
+  document.getElementById('modalDate').textContent = '📅 ' + dateStr;
+  document.getElementById('escalera').value = '';
+  document.getElementById('piso').value = '';
+  document.getElementById('puerta').value = '';
+  document.getElementById('reserveForm').dataset.fecha = dateStr;
+  document.getElementById('btnSubmit').disabled = false;
+  document.getElementById('modalOverlay').classList.add('open');
+  document.getElementById('escalera').focus();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function submitReserva(e) {
+  e.preventDefault();
+  var fecha    = document.getElementById('reserveForm').dataset.fecha;
+  var escalera = document.getElementById('escalera').value.trim();
+  var piso     = document.getElementById('piso').value.trim();
+  var puerta   = document.getElementById('puerta').value.trim();
+
+  if (!escalera || !piso || !puerta) {
+    toast('Rellena todos los campos', true);
+    return;
+  }
+
+  var btn = document.getElementById('btnSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Reservando…';
+
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fecha: fecha, escalera: escalera, piso: piso, puerta: puerta })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      toast('¡Reservado correctamente!');
+      closeModal();
+      loadReservas();
+    } else if (data.message === 'ya_reservada') {
+      toast('Este día ya está reservado', true);
+    } else {
+      toast('Error: ' + data.message, true);
+    }
+  })
+  .catch(function() {
+    toast('Error de conexión', true);
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Reservar';
+  });
+}
+
+function toast(msg, isError) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (isError ? ' error' : '');
+  el.classList.add('show');
+  setTimeout(function() { el.classList.remove('show'); }, 3200);
+}
+
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+</script>
+</body>
+</html>
