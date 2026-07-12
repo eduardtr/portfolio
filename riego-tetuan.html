@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Riego — Comunidad Tetuan</title>
+  <title>Calendario de riego</title>
+  <meta name="description" content="Reserva tu día para regar el césped y las zonas comunes de la Comunidad Tetuan.">
+  <meta property="og:title" content="Calendario de riego — Comunidad Tetuan">
+  <meta property="og:description" content="Reserva tu día para regar el césped y las zonas comunes.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Calendario de riego — Comunidad Tetuan">
+  <meta name="twitter:description" content="Reserva tu día para regar el césped y las zonas comunes.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -286,7 +294,7 @@
 <body>
 
   <div class="header">
-    <h1><span>🌿</span> Riego — Comunidad Tetuan</h1>
+    <h1><span>🌿</span> Calendario de riego</h1>
     <p>Reserva tu día para regar el césped y las zonas comunes. Sin reservas, el riego es libre y anyone puede hacerlo.</p>
   </div>
 
@@ -505,7 +513,7 @@ function submitReserva(e) {
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.ok) {
-      toast('¡Reservado correctamente!');
+      toast('¡Muchas gracias por colaborar!');
       closeModal();
       loadReservas();
     } else if (data.message === 'ya_reservada') {
