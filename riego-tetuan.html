@@ -493,7 +493,7 @@ function renderCalendar() {
   }
 }
 
-function makeCell(day, month, year, out, isBooked, isToday, dateStr, reserva) {
+function makeCell(day, month, year, out, isBooked, isToday, dateStr, reserva, isPast) {
   var el = document.createElement('div');
   el.className = 'cal-day';
   if (out) {
