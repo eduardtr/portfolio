@@ -507,20 +507,17 @@ function submitReserva(e) {
 
   fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fecha: fecha, escalera: escalera, piso: piso, puerta: puerta })
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({
+      action: 'crearReserva',
+      fecha: fecha,
+      escalera: escalera,
+      piso: piso,
+      puerta: puerta
+    })
   })
-  .then(function(r) {
-    if (!r.ok) {
-      toast('Error ' + r.status + ': intenta de nuevo', true);
-      btn.disabled = false;
-      btn.textContent = 'Reservar';
-      return;
-    }
-    return r.json();
-  })
+  .then(function(r) { return r.json(); })
   .then(function(data) {
-    if (!data) return;
     if (data.ok) {
       toast('¡Muchas gracias por colaborar!');
       closeModal();
@@ -533,6 +530,8 @@ function submitReserva(e) {
   })
   .catch(function(err) {
     toast('Error de conexión', true);
+  })
+  .finally(function() {
     btn.disabled = false;
     btn.textContent = 'Reservar';
   });
