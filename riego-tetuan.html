@@ -326,7 +326,7 @@
       <form id="reserveForm">
         <div class="form-group">
           <label for="escalera">Escalera</label>
-          <input type="text" id="escalera" placeholder="Ej: A" maxlength="10" autocomplete="off">
+          <input type="text" id="escalera" placeholder="Ej: 1" maxlength="10" autocomplete="off">
         </div>
         <div class="form-group">
           <label for="piso">Piso</label>
@@ -437,8 +437,9 @@ function renderCalendar() {
   for (var day = 1; day <= daysInMonth; day++) {
     var dateStr = pad(day) + '/' + pad(currentMonth + 1) + '/' + currentYear;
     var isToday = (dateStr === todayStr);
-    var isBooked = reservas.some(function(r) { return r.fecha === dateStr; });
-    var cell = makeCell(day, currentMonth, currentYear, false, isBooked, isToday, dateStr);
+    var reserva = reservas.find(function(r) { return r.fecha === dateStr; });
+    var isBooked = !!reserva;
+    var cell = makeCell(day, currentMonth, currentYear, false, isBooked, isToday, dateStr, reserva);
     grid.appendChild(cell);
   }
 
@@ -454,7 +455,7 @@ function renderCalendar() {
   }
 }
 
-function makeCell(day, month, year, out, isBooked, isToday, dateStr) {
+function makeCell(day, month, year, out, isBooked, isToday, dateStr, reserva) {
   var el = document.createElement('div');
   el.className = 'cal-day';
   if (out) {
@@ -467,6 +468,8 @@ function makeCell(day, month, year, out, isBooked, isToday, dateStr) {
         return function() { openModal(ds); };
       }(dateStr));
     } else {
+      el.style.cursor = 'default';
+      el.title = 'E' + (reserva ? reserva.escalera : '') + '-' + (reserva ? reserva.piso : '') + '-' + (reserva ? reserva.puerta : '');
       el.addEventListener('click', function() { toast('Este día ya está reservado', true); });
     }
   }
