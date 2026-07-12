@@ -510,8 +510,17 @@ function submitReserva(e) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fecha: fecha, escalera: escalera, piso: piso, puerta: puerta })
   })
-  .then(function(r) { return r.json(); })
+  .then(function(r) {
+    if (!r.ok) {
+      toast('Error ' + r.status + ': intenta de nuevo', true);
+      btn.disabled = false;
+      btn.textContent = 'Reservar';
+      return;
+    }
+    return r.json();
+  })
   .then(function(data) {
+    if (!data) return;
     if (data.ok) {
       toast('¡Muchas gracias por colaborar!');
       closeModal();
@@ -522,10 +531,8 @@ function submitReserva(e) {
       toast('Error: ' + data.message, true);
     }
   })
-  .catch(function() {
+  .catch(function(err) {
     toast('Error de conexión', true);
-  })
-  .finally(function() {
     btn.disabled = false;
     btn.textContent = 'Reservar';
   });
