@@ -342,7 +342,8 @@
     </div>
     <div class="notice">
       <strong>🕘 Horario de riego: 21:00 h</strong>
-      Riega el césped y también las plantas y arbustos de las zonas comunes. Respeta el horario para garantizar un riego uniforme y eficiente.
+      Riega el césped y también las plantas y arbustos de las zonas comunes. Respeta el horario para garantizar un riego uniforme y eficiente.<br>
+      Para cancelaciones, contacta con el presidente de la Escalera 2, Eduard Torres, en el 687 772 574.
     </div>
   </div>
 
@@ -504,7 +505,10 @@ function makeCell(day, month, year, out, isBooked, isToday, dateStr, reserva, is
     if (isBooked) {
       el.style.cursor = 'default';
       el.title = 'E' + reserva.escalera + '-' + reserva.piso + '-' + reserva.puerta;
-      el.addEventListener('click', function() { toast('Este día ya está reservado', true); });
+      el.addEventListener('click', function() {
+        var who = 'E' + reserva.escalera + '-' + reserva.piso + '-' + reserva.puerta;
+        toast('Reservado: ' + who, true);
+      });
     } else if (isPast) {
       el.classList.add('past');
       el.style.cursor = 'not-allowed';
