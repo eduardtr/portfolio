@@ -868,16 +868,16 @@ function renderChart() {
   let datasets = [];
   if (currentChartType === 'all') {
     datasets = [
-      { label: '💧 Pipí', data: pipi, backgroundColor: 'rgba(255,200,0,0.7)', borderRadius: 6 },
-      { label: '💩 Caca', data: caca, backgroundColor: 'rgba(160,82,45,0.7)', borderRadius: 6 },
-      { label: '🍼 Lactancia', data: lact, backgroundColor: 'rgba(248,164,200,0.7)', borderRadius: 6 }
+      { label: '💧 Pipí', data: pipi, borderColor: 'rgba(255,200,0,1)', backgroundColor: 'rgba(255,200,0,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 },
+      { label: '💩 Caca', data: caca, borderColor: 'rgba(160,82,45,1)', backgroundColor: 'rgba(160,82,45,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 },
+      { label: '🍼 Lactancia', data: lact, borderColor: 'rgba(248,164,200,1)', backgroundColor: 'rgba(248,164,200,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 }
     ];
   } else if (currentChartType === 'pipi') {
-    datasets = [{ label: '💧 Pipí', data: pipi, backgroundColor: 'rgba(255,200,0,0.8)', borderRadius: 6 }];
+    datasets = [{ label: '💧 Pipí', data: pipi, borderColor: 'rgba(255,200,0,1)', backgroundColor: 'rgba(255,200,0,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 }];
   } else if (currentChartType === 'caca') {
-    datasets = [{ label: '💩 Caca', data: caca, backgroundColor: 'rgba(160,82,45,0.8)', borderRadius: 6 }];
+    datasets = [{ label: '💩 Caca', data: caca, borderColor: 'rgba(160,82,45,1)', backgroundColor: 'rgba(160,82,45,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 }];
   } else {
-    datasets = [{ label: '🍼 Lactancia', data: lact, backgroundColor: 'rgba(248,164,200,0.8)', borderRadius: 6 }];
+    datasets = [{ label: '🍼 Lactancia', data: lact, borderColor: 'rgba(248,164,200,1)', backgroundColor: 'rgba(248,164,200,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 }];
   }
 
   // Ensure all data is valid numbers (defensive)
@@ -886,7 +886,7 @@ function renderChart() {
   if (chart) chart.destroy();
   try {
     chart = new Chart(ctx, {
-      type: 'bar',
+      type: 'line',
       data: {
         labels,
         datasets: datasets.map(ds => ({ ...ds, data: safeData(ds.data) }))
