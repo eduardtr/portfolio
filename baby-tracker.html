@@ -110,7 +110,14 @@
     .lactancia-banner .ban-since {
       font-size: 0.8rem;
       opacity: 0.8;
-      margin-bottom: 14px;
+      margin-bottom: 4px;
+    }
+
+    .lactancia-banner .ban-save-status {
+      font-size: 0.75rem;
+      opacity: 0.7;
+      margin-bottom: 10px;
+      min-height: 1em;
     }
 
     .lactancia-banner .ban-actions {
@@ -509,6 +516,7 @@
     <div class="ban-label">Lactancia en curso</div>
     <div class="ban-timer" id="banTimer">00:00</div>
     <div class="ban-since" id="banSince">desde las --:--</div>
+    <div class="ban-save-status" id="banSaveStatus"></div>
     <div class="ban-actions">
       <input type="text" class="ban-notas-select" id="banNotas" placeholder="Notas (opcional)" style="padding: 10px 16px;border-radius: 50px;border: 2px solid rgba(255,255,255,0.5);background: rgba(255,255,255,0.15);color: white;font-family: 'Nunito', sans-serif;font-size: 0.9rem;font-weight: 600;outline: none;width: 160px;">
       <button class="ban-btn ban-btn-stop" id="banStopBtn" onclick="stopLactancia()">⏹ Detener</button>
@@ -628,6 +636,7 @@ const TYPE_ICONS = { pipi: '💧', caca: '💩', lactancia: '🍼' };
 const TYPE_LABELS = { pipi: 'Pipí', caca: 'Caca', lactancia: 'Lactancia' };
 
 const SESSION_KEY = 'bt_lactancia_inicio';
+const SESSION_ROW_KEY = 'bt_lactancia_row_id';
 let allRecords = [];
 let currentChartType = 'all';
 let chart = null;
@@ -656,8 +665,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('banSince').textContent = 'desde las ' + timeFormat(startTime);
     document.getElementById('banTimer').textContent = '00:00';
     document.getElementById('banNotas').value = '';
+    const savedRowId = localStorage.getItem(SESSION_ROW_KEY);
+    document.getElementById('banSaveStatus').textContent =
+      savedRowId ? '✓ Guardado' : '⚠️ Sin conexión';
     if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(updateBanTimer, 1000);
+    timerInterval = setInterval(updateBanTimer, 1);
   }
 
   loadRecords();
@@ -671,22 +683,31 @@ document.addEventListener('DOMContentLoaded', () => {
 function startLactancia() {
   if (sessionInicio) return; // already in progress
 
-  sessionInicio = new Date().toISOString();
-  const startTime = new Date(sessionInicio);
-
-  // Persist to localStorage
+  const inicio = new Date();
+  sessionInicio = inicio.toISOString();
   localStorage.setItem(SESSION_KEY, sessionInicio);
 
-  // Show banner
-  document.getElementById('lactanciaBanner').classList.add('active');
+  // Register start in backend immediately (another person can stop it)
+  const banner = document.getElementById('lactanciaBanner');
+  banner.classList.add('active');
   document.getElementById('btnLactancia').classList.add('in-progress');
-  document.getElementById('banSince').textContent = 'desde las ' + timeFormat(startTime);
+  document.getElementById('banSince').textContent = 'desde las ' + timeFormat(inicio);
   document.getElementById('banTimer').textContent = '00:00';
   document.getElementById('banNotas').value = '';
+  document.getElementById('banSaveStatus').textContent = '⏳ Guardando…';
 
-  // Start live timer
   if (timerInterval) clearInterval(timerInterval);
-  timerInterval = setInterval(updateBanTimer, 1000);
+  timerInterval = setInterval(updateBanTimer, 1);
+
+  logEvent('lactancia', 0, '')
+    .then(result => {
+      // Store row_id so stopLactancia can update this same record
+      localStorage.setItem(SESSION_ROW_KEY, result.row_id);
+      document.getElementById('banSaveStatus').textContent = '✓ Guardado';
+    })
+    .catch(() => {
+      document.getElementById('banSaveStatus').textContent = '⚠️ Sin conexión';
+    });
 }
 
 function updateBanTimer() {
@@ -706,20 +727,33 @@ async function stopLactancia() {
   const fin = new Date();
   const inicio = new Date(sessionInicio);
   const diff = Math.round((fin - inicio) / 60000); // minutes
-  const notas = document.getElementById('banNotas').value;
 
   clearInterval(timerInterval);
   timerInterval = null;
   sessionInicio = null;
   localStorage.removeItem(SESSION_KEY);
 
+  const rowId = localStorage.getItem(SESSION_ROW_KEY);
+  localStorage.removeItem(SESSION_ROW_KEY);
+
   // Hide banner
   document.getElementById('lactanciaBanner').classList.remove('active');
   document.getElementById('btnLactancia').classList.remove('in-progress');
 
-  // Save
+  const notas = document.getElementById('banNotas').value;
+
   try {
-    await logEvent('lactancia', Math.max(1, diff), notas);
+    if (rowId) {
+      // Fetch the record to get the real start timestamp stored in backend
+      const records = await loadRecordsSilent();
+      const record = records.find(r => r.row_id === rowId);
+      const startTs = record ? record.timestamp : inicio.toISOString();
+      // Update record with start timestamp and duration (not end timestamp)
+      await updateRecord(rowId, 'lactancia', Math.max(1, diff), notas, startTs);
+    } else {
+      // Legacy session (pre-update): save with start timestamp
+      await logEventWithTimestamp('lactancia', Math.max(1, diff), notas, inicio.toISOString());
+    }
     showToast('🍼 Lactancia registrada (' + diff + ' min)');
     await loadRecords();
   } catch (e) {
@@ -727,11 +761,18 @@ async function stopLactancia() {
   }
 }
 
+async function loadRecordsSilent() {
+  const resp = await fetch(`${API_URL}?action=getRecords`);
+  const data = await resp.json();
+  return data.records || [];
+}
+
 function cancelLactancia() {
   clearInterval(timerInterval);
   timerInterval = null;
   sessionInicio = null;
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_ROW_KEY);
   document.getElementById('lactanciaBanner').classList.remove('active');
   document.getElementById('btnLactancia').classList.remove('in-progress');
   showToast('Lactancia cancelada');
@@ -777,6 +818,18 @@ async function logEvent(type, duracionMin, notas) {
   return result;
 }
 
+async function logEventWithTimestamp(type, duracionMin, notas, timestamp) {
+  const body = { action: 'logEventWithTimestamp', type, duracion_min: duracionMin, notas, timestamp };
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.error);
+  return result;
+}
+
 async function updateRecord(rowId, type, duracionMin, notas, timestamp) {
   const body = { action: 'updateRecord', row_id: rowId, type, duracion_min: duracionMin, notas, timestamp };
   const resp = await fetch(API_URL, {
@@ -810,7 +863,8 @@ function renderTodaySummary() {
   const avg = type => {
     const counts = days.map(d => allRecords.filter(r => r.timestamp.startsWith(d) && r.type === type).length);
     const total = counts.reduce((a, b) => a + b, 0);
-    return counts.length > 0 ? (total / counts.length).toFixed(1) : '–';
+    const daysWithRecords = counts.filter(c => c > 0).length;
+    return daysWithRecords > 0 ? (total / daysWithRecords).toFixed(1) : '–';
   };
   document.getElementById('avgPipi').textContent = avg('pipi');
   document.getElementById('avgCaca').textContent = avg('caca');
