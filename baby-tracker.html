@@ -260,6 +260,11 @@
     .chart-tab:hover { background: var(--yellow-light); }
     .chart-tab.active { background: var(--yellow); border-color: var(--yellow); }
 
+    #chart {
+      width: 100% !important;
+      height: 220px !important;
+    }
+
     /* Log Section */
     .log-section {
       background: var(--white);
@@ -476,9 +481,14 @@
     /* Responsive */
     @media (max-width: 500px) {
       .action-buttons { grid-template-columns: 1fr; }
-      .summary-bar { grid-template-columns: 1fr; }
+      .summary-bar { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .summary-card { padding: 14px 6px; }
+      .summary-card .sum-icon { font-size: 1.3rem; }
+      .summary-card .sum-value { font-size: 1.3rem; }
+      .summary-card .sum-label { font-size: 0.65rem; }
       .header h1 { font-size: 1.6rem; }
       .lactancia-banner .ban-timer { font-size: 2.2rem; }
+      #chart { height: 200px !important; }
     }
   </style>
 </head>
@@ -526,18 +536,18 @@
   <div class="summary-bar">
     <div class="summary-card pipi">
       <div class="sum-icon">💧</div>
-      <div class="sum-value" id="todayPipi">0</div>
-      <div class="sum-label">Pipís hoy</div>
+      <div class="sum-value" id="avgPipi">–</div>
+      <div class="sum-label">pipí / día</div>
     </div>
     <div class="summary-card caca">
       <div class="sum-icon">💩</div>
-      <div class="sum-value" id="todayCaca">0</div>
-      <div class="sum-label">Cacas hoy</div>
+      <div class="sum-value" id="avgCaca">–</div>
+      <div class="sum-label">caca / día</div>
     </div>
     <div class="summary-card lactancia">
       <div class="sum-icon">🍼</div>
-      <div class="sum-value" id="todayLactancia">0</div>
-      <div class="sum-label">Lactancias hoy</div>
+      <div class="sum-value" id="avgLactancia">–</div>
+      <div class="sum-label">lact. / día</div>
     </div>
   </div>
 
@@ -796,11 +806,15 @@ async function deleteRecord(rowId) {
 // ================================================================
 
 function renderTodaySummary() {
-  const today = new Date().toISOString().split('T')[0];
-  const todayRecords = allRecords.filter(r => r.timestamp.startsWith(today));
-  document.getElementById('todayPipi').textContent = todayRecords.filter(r => r.type === 'pipi').length;
-  document.getElementById('todayCaca').textContent = todayRecords.filter(r => r.type === 'caca').length;
-  document.getElementById('todayLactancia').textContent = todayRecords.filter(r => r.type === 'lactancia').length;
+  const days = getLast7Days();
+  const avg = type => {
+    const counts = days.map(d => allRecords.filter(r => r.timestamp.startsWith(d) && r.type === type).length);
+    const total = counts.reduce((a, b) => a + b, 0);
+    return counts.length > 0 ? (total / counts.length).toFixed(1) : '–';
+  };
+  document.getElementById('avgPipi').textContent = avg('pipi');
+  document.getElementById('avgCaca').textContent = avg('caca');
+  document.getElementById('avgLactancia').textContent = avg('lactancia');
 }
 
 function renderLog() {
@@ -894,6 +908,7 @@ function renderChart() {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         animation: false,
         plugins: {
           legend: {
@@ -1038,6 +1053,13 @@ async function saveEdit() {
 
   const tsInput = document.getElementById('editTimestamp')?.value;
   let newTimestamp = r.timestamp;
+  // Detect corrupt timestamps: GAS sometimes stores date-only (time lost).
+  // Both epoch ('1970-01-01T00:00:00.000Z') and midnight ('...T00:00:00.000Z')
+  // signal data loss — in both cases rebuild from the datetime-local input.
+  const isCorrupt = r.timestamp && (
+    r.timestamp.startsWith('1970-01-01') ||
+    r.timestamp.endsWith('T00:00:00.000Z')
+  );
   if (tsInput) {
     const parsed = new Date(tsInput);
     if (!isNaN(parsed.getTime())) newTimestamp = parsed.toISOString();
