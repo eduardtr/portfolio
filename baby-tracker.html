@@ -568,7 +568,7 @@
       <button class="chart-tab" onclick="setChartType('caca')">💩 Caca</button>
       <button class="chart-tab" onclick="setChartType('lactancia')">🍼 Lactancia</button>
     </div>
-    <canvas id="chart" height="220"></canvas>
+    <canvas id="chart"></canvas>
   </section>
 
   <!-- Recent Log -->
@@ -963,6 +963,7 @@ function renderChart() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        aspectRatio: 2.5,
         animation: false,
         plugins: {
           legend: {
