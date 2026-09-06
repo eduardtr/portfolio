@@ -490,7 +490,6 @@
       .summary-card .sum-label { font-size: 0.65rem; }
       .header h1 { font-size: 1.6rem; }
       .lactancia-banner .ban-timer { font-size: 2.2rem; }
-      #chart { height: 200px !important; }
     }
   </style>
 </head>
@@ -563,7 +562,7 @@
       <button class="chart-tab" onclick="setChartType('caca')">💩 Caca</button>
       <button class="chart-tab" onclick="setChartType('lactancia')">🍼 Lactancia</button>
     </div>
-    <canvas id="chart" style="display:block;width:100%;height:220px;"></canvas>
+    <canvas id="chart" style="display:block;width:100%;"></canvas>
   </section>
 
   <!-- Recent Log -->
@@ -957,7 +956,7 @@ function renderChart() {
       },
       options: {
         responsive: true,
-        maintainAspectRatio: false,
+        maintainAspectRatio: true,
         animation: false,
         plugins: {
           legend: {
