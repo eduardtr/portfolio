@@ -238,6 +238,14 @@
     .summary-card.caca .sum-value { color: #6B3E26; }
     .summary-card.lactancia .sum-value { color: var(--pink-dark); }
 
+    .summary-bar.lact-stats {
+      margin-top: 0;
+    }
+
+    .summary-bar.lact-stats .summary-card {
+      background: var(--yellow-light);
+    }
+
     /* Chart */
     .chart-section {
       background: var(--white);
@@ -488,6 +496,7 @@
       .summary-card .sum-icon { font-size: 1.3rem; }
       .summary-card .sum-value { font-size: 1.3rem; }
       .summary-card .sum-label { font-size: 0.65rem; }
+      .summary-bar.lact-stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
       .header h1 { font-size: 1.6rem; }
       .lactancia-banner .ban-timer { font-size: 2.2rem; }
     }
@@ -550,6 +559,20 @@
       <div class="sum-icon">🍼</div>
       <div class="sum-value" id="avgLactancia">–</div>
       <div class="sum-label">lact. / día</div>
+    </div>
+  </div>
+
+  <!-- Lactancia Stats -->
+  <div class="summary-bar lact-stats">
+    <div class="summary-card">
+      <div class="sum-icon">📊</div>
+      <div class="sum-value" id="avgDurLact">–</div>
+      <div class="sum-label">min / toma · 7d</div>
+    </div>
+    <div class="summary-card">
+      <div class="sum-icon">📅</div>
+      <div class="sum-value" id="avgDurToday">–</div>
+      <div class="sum-label">min / toma · hoy</div>
     </div>
   </div>
 
@@ -854,15 +877,31 @@ async function deleteRecord(rowId) {
 
 function renderTodaySummary() {
   const days = getLast7Days();
+  const today = new Date().toISOString().split('T')[0];
+
   const avg = type => {
     const counts = days.map(d => allRecords.filter(r => r.timestamp.startsWith(d) && r.type === type).length);
     const total = counts.reduce((a, b) => a + b, 0);
     const daysWithRecords = counts.filter(c => c > 0).length;
     return daysWithRecords > 0 ? (total / daysWithRecords).toFixed(1) : '–';
   };
+
   document.getElementById('avgPipi').textContent = avg('pipi');
   document.getElementById('avgCaca').textContent = avg('caca');
   document.getElementById('avgLactancia').textContent = avg('lactancia');
+
+  // Lactancia duration stats
+  const lact7d = allRecords.filter(r => r.type === 'lactancia' && r.duracion_min);
+  const lactToday = lact7d.filter(r => r.timestamp.startsWith(today));
+
+  const avgDur = records => {
+    if (!records.length) return '–';
+    const total = records.reduce((s, r) => s + (r.duracion_min || 0), 0);
+    return (total / records.length).toFixed(0);
+  };
+
+  document.getElementById('avgDurLact').textContent = avgDur(lact7d);
+  document.getElementById('avgDurToday').textContent = avgDur(lactToday);
 }
 
 function renderLog() {
@@ -957,7 +996,7 @@ function renderChart() {
       options: {
         responsive: true,
         maintainAspectRatio: true,
-        aspectRatio: 2,
+        aspectRatio: 1.5,
         animation: false,
         plugins: {
           legend: {
@@ -970,7 +1009,7 @@ function renderChart() {
             beginAtZero: true,
             min: 0,
             grace: '0%',
-            ticks: { stepSize: 1, font: { family: 'Nunito' }, precision: 0 }
+            ticks: { stepSize: 1, font: { family: 'Nunito' }, precision: 0, maxTicksLimit: 8 }
           },
           x: { grid: { display: false }, ticks: { font: { family: 'Nunito', size: 12 } } }
         }
