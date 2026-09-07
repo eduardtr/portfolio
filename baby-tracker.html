@@ -624,6 +624,11 @@
       <div class="sum-value" id="avgDurToday">–</div>
       <div class="sum-label">min / toma · hoy</div>
     </div>
+    <div class="summary-card">
+      <div class="sum-icon">🍼</div>
+      <div class="sum-value" id="lactTodayCount">–</div>
+      <div class="sum-label">tomas · hoy</div>
+    </div>
   </div>
 
   <!-- Chart -->
@@ -1005,6 +1010,7 @@ function renderTodaySummary() {
 
   document.getElementById('avgDurLact').textContent = avgDur(lact7d);
   document.getElementById('avgDurToday').textContent = avgDur(lactToday);
+  document.getElementById('lactTodayCount').textContent = lactToday.length || '–';
 }
 
 function renderLog() {
