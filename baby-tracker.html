@@ -753,7 +753,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // NEXT FEEDING BANNER
 // ================================================================
 
-const FEEDING_INTERVAL_HOURS = 3;
+function getFeedingIntervalHours(timestamp) {
+  const d = new Date(timestamp);
+  const h = d.getHours();
+  // Morning: 8:00–20:00 → 2h, Night: 20:00–8:00 → 3h
+  return (h >= 8 && h < 20) ? 2 : 3;
+}
 
 function updateNextFeedingBanner() {
   const banner = document.getElementById('nextFeedingBanner');
@@ -777,14 +782,21 @@ function updateNextFeedingBanner() {
   }
 
   const lastLact = new Date(lactRecords[0].timestamp);
-  const nextFeeding = new Date(lastLact.getTime() + FEEDING_INTERVAL_HOURS * 3600 * 1000);
+  const intervalHours = getFeedingIntervalHours(lastLact);
+  const nextFeeding = new Date(lastLact.getTime() + intervalHours * 3600 * 1000);
   const now = new Date();
 
   banner.classList.add('active');
 
+  const timeStr = nextFeeding.toTimeString().substring(0, 5);
+
   if (nextFeeding <= now) {
-    // Overdue
-    timeEl.innerHTML = '<span class="nf-overdue">⚠️ Retrasada</span>';
+    // Overdue — show estimated time alongside the overdue warning
+    const overdueMin = Math.floor((now - nextFeeding) / 60000);
+    const overdueH = Math.floor(overdueMin / 60);
+    const overdueM = overdueMin % 60;
+    const overdueStr = overdueH > 0 ? `${overdueH}h ${overdueM}m` : `${overdueM}m`;
+    timeEl.innerHTML = `<span class="nf-overdue">⚠️ Retrasada</span> <span style="font-size:0.9rem;color:var(--text-light);font-weight:600;">(${timeStr} · hace ${overdueStr})</span>`;
   } else {
     // Show countdown or time
     const diffMs = nextFeeding - now;
@@ -792,7 +804,6 @@ function updateNextFeedingBanner() {
     const h = Math.floor(diffMin / 60);
     const m = diffMin % 60;
 
-    const timeStr = nextFeeding.toTimeString().substring(0, 5);
     const countdownStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
 
     timeEl.innerHTML = `<span class="nf-time">${timeStr}</span> <span style="font-size:0.85rem;color:var(--text-light);font-weight:600;">(en ${countdownStr})</span>`;
