@@ -1424,35 +1424,40 @@ async function saveQuick() {
 
 function openEditModal(rowId) {
   const r = allRecords.find(x => x.row_id === rowId);
-  if (!r) return;
+  if (!r) { showToast('❌ Registro no encontrado'); return; }
+
+  // Guard against invalid timestamps
+  let tsDate;
+  try { tsDate = new Date(r.timestamp); } catch { tsDate = new Date(); }
+  if (isNaN(tsDate.getTime())) tsDate = new Date();
+  const tsValue = toDatetimeLocal(tsDate);
 
   document.getElementById('editingRowId').value = rowId;
   document.getElementById('editIcon').textContent = TYPE_ICONS[r.type] || '📝';
   document.getElementById('editTime').textContent = formatTimestamp(r.timestamp);
   document.getElementById('deleteConfirm').style.display = 'none';
 
-  const tsValue = toDatetimeLocal(new Date(r.timestamp));
-
   let formHtml = '';
+
   if (r.type === 'lactancia') {
     formHtml = `
       <div class="form-group">
-        <label>🕐 Fecha y hora del registro</label>
+        <label>🕐 Fecha y hora</label>
         <input type="datetime-local" id="editTimestamp" value="${tsValue}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
       </div>
       <div class="form-group">
-        <label>⏱ Duración (minutos)</label>
+        <label>⏱ Duración (min)</label>
         <input type="number" id="editDuracion" min="1" value="${r.duracion_min || ''}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
       </div>
       <div class="form-group">
         <label>📌 Notas</label>
-        <input type="text" id="editNotas" placeholder="Notas (opcional)" value="${r.notas || ''}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
+        <input type="text" id="editNotas" value="${r.notas || ''}" placeholder="Notas (opcional)" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
       </div>
     `;
   } else if (r.type === 'peso') {
     formHtml = `
       <div class="form-group">
-        <label>🕐 Fecha y hora del registro</label>
+        <label>🕐 Fecha y hora</label>
         <input type="datetime-local" id="editTimestamp" value="${tsValue}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
       </div>
       <div class="form-group">
@@ -1461,21 +1466,26 @@ function openEditModal(rowId) {
       </div>
       <div class="form-group">
         <label>📌 Notas</label>
-        <input type="text" id="editNotas" placeholder="Notas (opcional)" value="${r.notas || ''}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
+        <input type="text" id="editNotas" value="${r.notas || ''}" placeholder="Notas (opcional)" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
       </div>
     `;
   } else {
+    // pipi / caca
     formHtml = `
       <div class="form-group">
-        <label>🕐 Fecha y hora del registro</label>
+        <label>🕐 Fecha y hora</label>
         <input type="datetime-local" id="editTimestamp" value="${tsValue}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
       </div>
       <div class="form-group">
         <label>📌 Notas</label>
-        <input type="text" id="editNotas" placeholder="Notas (opcional)" value="${r.notas || ''}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
+        <input type="text" id="editNotas" value="${r.notas || ''}" placeholder="Notas (opcional)" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
       </div>
     `;
   }
+
+  document.getElementById('editFormContent').innerHTML = formHtml;
+  document.getElementById('editSaveBtn').disabled = false;
+  document.getElementById('editSaveBtn').textContent = 'Guardar cambios';
   document.getElementById('editModal').classList.add('active');
 }
 
@@ -1493,36 +1503,45 @@ function hideDeleteConfirm() {
 
 async function saveEdit() {
   const rowId = document.getElementById('editingRowId').value;
-  const r = allRecords.find(x => x.row_id === rowId);
-  if (!r) return;
+  if (!rowId) { showToast('❌ Sin registro activo'); return; }
 
   const btn = document.getElementById('editSaveBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>';
+  btn.textContent = 'Guardando...';
 
-  const tsInput = document.getElementById('editTimestamp')?.value;
-  // Always pass the timestamp from the input — GAS now stores it as plain text, preserving the exact time.
+  // Always read fresh from DOM
+  const tsInput = document.getElementById('editTimestamp') ? document.getElementById('editTimestamp').value : null;
+  const notasInput = document.getElementById('editNotas') ? document.getElementById('editNotas').value : '';
+  const durInput = document.getElementById('editDuracion') ? document.getElementById('editDuracion').value : null;
+  const pesoInput = document.getElementById('editPeso') ? document.getElementById('editPeso').value : null;
+
+  // Find the record type from current allRecords
+  const r = allRecords.find(x => x.row_id === rowId);
+  const type = r ? r.type : null;
+  if (!type) { showToast('❌ Registro no encontrado'); btn.disabled = false; btn.textContent = 'Guardar cambios'; return; }
+
+  // Parse timestamp — send to GAS for storage as plain text
   let newTimestamp;
   if (tsInput) {
-    const parsed = new Date(tsInput);
-    newTimestamp = isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+    const pd = new Date(tsInput);
+    newTimestamp = isNaN(pd.getTime()) ? undefined : pd.toISOString();
+  }
+
+  let duracion_min = null;
+  let peso_kg = null;
+
+  if (type === 'lactancia') {
+    duracion_min = parseInt(durInput) || 1;
+  } else if (type === 'peso') {
+    peso_kg = parseFloat(pesoInput);
+    if (!peso_kg || peso_kg <= 0) { showToast('❌ Peso inválido'); btn.disabled = false; btn.textContent = 'Guardar cambios'; return; }
   }
 
   try {
-    if (r.type === 'lactancia') {
-      const duracion = parseInt(document.getElementById('editDuracion')?.value) || 1;
-      const notas = document.getElementById('editNotas')?.value || '';
-      await updateRecord(rowId, 'lactancia', duracion, notas, newTimestamp);
-    } else if (r.type === 'peso') {
-      const peso = parseFloat(document.getElementById('editPeso')?.value);
-      const notas = document.getElementById('editNotas')?.value || '';
-      await updateRecord(rowId, 'peso', null, notas, newTimestamp, peso);
-    } else {
-      const notas = document.getElementById('editNotas')?.value || '';
-      await updateRecord(rowId, r.type, null, notas, newTimestamp);
-    }
+    await updateRecord(rowId, type, duracion_min, notasInput, newTimestamp, peso_kg);
     closeEditModal();
     showToast('✅ Registro actualizado');
+    showLoader();
     await loadRecords();
   } catch (e) {
     showToast('❌ Error: ' + e.message);
