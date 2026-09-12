@@ -245,6 +245,7 @@
     .btn-pipi { background: linear-gradient(135deg, var(--yellow), #FFD700); color: var(--brown); }
     .btn-caca { background: linear-gradient(135deg, #A0522D, #6B3E26); color: white; }
     .btn-lactancia { background: linear-gradient(135deg, var(--pink), var(--pink-dark)); color: white; }
+    .btn-peso { background: linear-gradient(135deg, #74C0FC, #1C7ED6); color: white; }
 
     .action-btn.in-progress {
       animation: pulse-glow 1.5s ease-in-out infinite;
@@ -594,6 +595,14 @@
     </button>
   </div>
 
+  <!-- Weight Button -->
+  <div style="margin: 15px 0;">
+    <button class="action-btn btn-peso" onclick="openPesoModal()" style="width:100%;border-radius:20px;padding:20px;">
+      <span class="icon">⚖️</span>
+      Registrar peso
+    </button>
+  </div>
+
   <!-- Summary Cards -->
   <div class="summary-bar">
     <div class="summary-card pipi">
@@ -644,6 +653,16 @@
     <canvas id="chart" style="display:block;width:100%;"></canvas>
   </section>
 
+  <!-- Weight Chart -->
+  <section class="chart-section" id="weightChartSection">
+    <h2>⚖️ Evolución del peso</h2>
+    <div style="margin-bottom:12px;text-align:center;">
+      <span style="font-size:1.1rem;font-weight:800;color:#1C7ED6;" id="currentWeight">–</span>
+      <span style="font-size:0.85rem;color:var(--text-light);font-weight:600;"> kg · última medición</span>
+    </div>
+    <canvas id="weightChart" style="display:block;width:100%;"></canvas>
+  </section>
+
   <!-- Recent Log -->
   <section class="log-section">
     <h2>🕐 Últimos registros</h2>
@@ -655,6 +674,27 @@
   <footer class="footer">
     Hecho con 💕 · 2026
   </footer>
+</div>
+
+<!-- Peso Modal -->
+<div class="modal-overlay" id="pesoModal">
+  <div class="modal">
+    <div class="modal-icon">⚖️</div>
+    <h3>Registrar peso</h3>
+    <p id="pesoTime"></p>
+    <div class="modal-form">
+      <div class="form-group">
+        <label>⚖️ Peso (kg)</label>
+        <input type="number" id="pesoInput" step="0.001" min="0" max="30" placeholder="Ej: 3.450" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
+      </div>
+      <div class="form-group">
+        <label>📌 Notas (opcional)</label>
+        <input type="text" id="pesoNotasInput" placeholder="Ej: después de comer..." style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
+      </div>
+    </div>
+    <button class="btn-save" id="pesoSaveBtn" onclick="savePeso()">Guardar</button>
+    <button class="btn-cancel" onclick="closePesoModal()">Cancelar</button>
+  </div>
 </div>
 
 <!-- Quick Modal (pipi / caca) -->
@@ -705,14 +745,15 @@
 // ================================================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLEvJNV-ordsggRrv_MaSp3HKNpJwB5oiOI-bUayXumWrg8WjHK21bwyVaYIQHZbUzYw/exec';
 
-const TYPE_ICONS = { pipi: '💧', caca: '💩', lactancia: '🍼' };
-const TYPE_LABELS = { pipi: 'Pipí', caca: 'Caca', lactancia: 'Lactancia' };
+const TYPE_ICONS = { pipi: '💧', caca: '💩', lactancia: '🍼', peso: '⚖️' };
+const TYPE_LABELS = { pipi: 'Pipí', caca: 'Caca', lactancia: 'Lactancia', peso: 'Peso' };
 
 const SESSION_KEY = 'bt_lactancia_inicio';
 const SESSION_ROW_KEY = 'bt_lactancia_row_id';
 let allRecords = [];
 let currentChartType = 'all';
 let chart = null;
+let weightChart = null;
 let timerInterval = null;
 
 // Lactancia session state
@@ -935,6 +976,7 @@ async function loadRecords() {
     renderTodaySummary();
     renderLog();
     renderChart();
+    renderWeightChart();
     updateNextFeedingBanner();
   } catch (e) {
     console.warn('Could not load records:', e);
@@ -967,8 +1009,8 @@ async function logEventWithTimestamp(type, duracionMin, notas, timestamp) {
   return result;
 }
 
-async function updateRecord(rowId, type, duracionMin, notas, timestamp) {
-  const body = { action: 'updateRecord', row_id: rowId, type, duracion_min: duracionMin, notas, timestamp };
+async function updateRecord(rowId, type, duracionMin, notas, timestamp, pesoKg) {
+  const body = { action: 'updateRecord', row_id: rowId, type, duracion_min: duracionMin, notas, timestamp, peso_kg: pesoKg };
   const resp = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1040,6 +1082,9 @@ function renderLog() {
     let detail = r.notas ? `· ${r.notas}` : '';
     if (r.type === 'lactancia' && r.duracion_min) {
       detail = `· ${r.duracion_min} min ${detail}`;
+    }
+    if (r.type === 'peso' && r.peso_kg) {
+      detail = `· ${r.peso_kg} kg ${detail}`;
     }
 
     return `
@@ -1141,6 +1186,74 @@ function renderChart() {
   }
 }
 
+function renderWeightChart() {
+  const ctx = document.getElementById('weightChart');
+  if (!ctx) return;
+
+  const pesoRecords = allRecords
+    .filter(r => r.type === 'peso' && r.peso_kg && r.timestamp)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  const section = document.getElementById('weightChartSection');
+  if (pesoRecords.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  // Last weight for the header
+  const last = pesoRecords[pesoRecords.length - 1];
+  const curEl = document.getElementById('currentWeight');
+  if (curEl) curEl.textContent = last.peso_kg;
+
+  // All-time data points (show last 30 to keep it readable)
+  const recent = pesoRecords.slice(-30);
+  const labels = recent.map(r => {
+    const d = new Date(r.timestamp);
+    return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  });
+  const data = recent.map(r => parseFloat(r.peso_kg));
+
+  if (weightChart) weightChart.destroy();
+  try {
+    weightChart = new Chart(ctx.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'kg',
+          data,
+          borderColor: 'rgba(28,126,214,1)',
+          backgroundColor: 'rgba(116,192,252,0.6)',
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          tension: 0.3,
+          fill: true,
+          borderWidth: 2.5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 2.5,
+        animation: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            ticks: { font: { family: 'Nunito' }, callback: v => v + ' kg', precision: 2, maxTicksLimit: 8 }
+          },
+          x: { grid: { display: false }, ticks: { font: { family: 'Nunito', size: 11 } } }
+        }
+      }
+    });
+  } catch (e) {
+    console.warn('Weight chart render error:', e);
+  }
+}
+
 function getLast7Days() {
   const days = [];
   for (let i = 6; i >= 0; i--) {
@@ -1149,6 +1262,61 @@ function getLast7Days() {
     days.push(d.toISOString().split('T')[0]);
   }
   return days;
+}
+
+// ================================================================
+// PESO MODAL
+// ================================================================
+
+function openPesoModal() {
+  const now = new Date();
+  document.getElementById('pesoTime').textContent = 'Fecha: ' + now.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  document.getElementById('pesoInput').value = '';
+  document.getElementById('pesoNotasInput').value = '';
+  document.getElementById('pesoSaveBtn').disabled = false;
+  document.getElementById('pesoSaveBtn').textContent = 'Guardar';
+  document.getElementById('pesoModal').classList.add('active');
+}
+
+function closePesoModal() {
+  document.getElementById('pesoModal').classList.remove('active');
+}
+
+async function savePeso() {
+  const pesoVal = parseFloat(document.getElementById('pesoInput').value);
+  const notas = document.getElementById('pesoNotasInput').value;
+  const btn = document.getElementById('pesoSaveBtn');
+
+  if (!pesoVal || pesoVal <= 0 || pesoVal > 30) {
+    showToast('❌ Introduce un peso válido (0.1–30 kg)');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
+  try {
+    await logPeso(pesoVal, notas);
+    closePesoModal();
+    showToast('⚖️ Peso registrado: ' + pesoVal.toFixed(3) + ' kg');
+    await loadRecords();
+  } catch (e) {
+    showToast('❌ Error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
+  }
+}
+
+async function logPeso(pesoKg, notas) {
+  const body = { action: 'logPeso', peso_kg: pesoKg, notas };
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.error);
+  return result;
 }
 
 // ================================================================
@@ -1232,7 +1400,22 @@ function openEditModal(rowId) {
         <input type="text" id="editNotas" placeholder="Notas (opcional)" value="${r.notas || ''}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
       </div>
     `;
-  }
+  } else if (r.type === 'peso') {
+    formHtml = `
+      <div class="form-group">
+        <label>🕐 Fecha y hora del registro</label>
+        <input type="datetime-local" id="editTimestamp" value="${tsValue}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
+      </div>
+      <div class="form-group">
+        <label>⚖️ Peso (kg)</label>
+        <input type="number" id="editPeso" step="0.001" min="0" max="30" value="${r.peso_kg || ''}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
+      </div>
+      <div class="form-group">
+        <label>📌 Notas</label>
+        <input type="text" id="editNotas" placeholder="Notas (opcional)" value="${r.notas || ''}" style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
+      </div>
+    `;
+  } else {
 
   document.getElementById('editFormContent').innerHTML = formHtml;
   document.getElementById('editModal').classList.add('active');
@@ -1278,6 +1461,10 @@ async function saveEdit() {
       const duracion = parseInt(document.getElementById('editDuracion')?.value) || 1;
       const notas = document.getElementById('editNotas')?.value || '';
       await updateRecord(rowId, 'lactancia', duracion, notas, newTimestamp);
+    } else if (r.type === 'peso') {
+      const peso = parseFloat(document.getElementById('editPeso')?.value);
+      const notas = document.getElementById('editNotas')?.value || '';
+      await updateRecord(rowId, 'peso', null, notas, newTimestamp, peso);
     } else {
       const notas = document.getElementById('editNotas')?.value || '';
       await updateRecord(rowId, r.type, null, notas, newTimestamp);
