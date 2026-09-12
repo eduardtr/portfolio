@@ -702,7 +702,7 @@
     <h2>⚖️ Evolución del peso</h2>
     <div style="margin-bottom:12px;text-align:center;">
       <span style="font-size:1.1rem;font-weight:800;color:#1C7ED6;" id="currentWeight">–</span>
-      <span style="font-size:0.85rem;color:var(--text-light);font-weight:600;" id="currentWeightUnit"> kg · última medición</span>
+      <span style="font-size:0.85rem;color:var(--text-light);font-weight:600;"> kg · última medición</span>
       <span style="display:block;font-size:0.8rem;font-weight:700;margin-top:4px;" id="weightDelta"></span>
     </div>
     <canvas id="weightChart" style="display:block;width:100%;"></canvas>
@@ -1266,34 +1266,28 @@ function renderWeightChart() {
   const curEl = document.getElementById('currentWeight');
   if (curEl) curEl.textContent = last.peso_kg;
 
-  // Calculate weight delta vs 7 days ago
-  const unitEl = document.getElementById('currentWeightUnit');
+  // Calculate weight gain per day: (last - first) / days_diff, in grams/day
   const deltaEl = document.getElementById('weightDelta');
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
-
   let deltaText = '';
-  const weekAgoRecords = pesoRecords.filter(r => r.timestamp.split('T')[0] <= sevenDaysAgoStr);
-  if (weekAgoRecords.length > 0) {
-    const old = parseFloat(weekAgoRecords[weekAgoRecords.length - 1].peso_kg);
-    const current = parseFloat(last.peso_kg);
-    const delta = current - old;
-    const sign = delta >= 0 ? '+' : '';
-    if (Math.abs(delta) >= 0.001) {
-      deltaText = `${sign}${delta.toFixed(3)} kg en 7 días`;
-      if (delta >= 0) {
-        deltaEl.style.color = '#37b24d';
-      } else {
-        deltaEl.style.color = '#e03e3e';
-      }
+  if (pesoRecords.length >= 2) {
+    const first = pesoRecords[0];
+    const lastRec = pesoRecords[pesoRecords.length - 1];
+    const firstDate = new Date(first.timestamp);
+    const lastDate = new Date(lastRec.timestamp);
+    const diffMs = lastDate - firstDate;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffDays > 0) {
+      const deltaKg = parseFloat(lastRec.peso_kg) - parseFloat(first.peso_kg);
+      const deltaG = deltaKg * 1000;
+      const perDay = deltaG / diffDays;
+      const sign = perDay >= 0 ? '+' : '';
+      const absPerDay = Math.abs(perDay);
+      deltaText = `${sign}${absPerDay.toFixed(0)} g al día`;
+      deltaEl.style.color = perDay >= 0 ? '#37b24d' : '#e03e3e';
     }
   }
   if (deltaEl) {
     deltaEl.textContent = deltaText;
-  }
-  if (unitEl) {
-    unitEl.textContent = pesoRecords.length === 1 ? ' kg · 1 medición' : ` kg · ${pesoRecords.length} mediciones`;
   }
 
   // All-time data points (show last 30 to keep it readable)
