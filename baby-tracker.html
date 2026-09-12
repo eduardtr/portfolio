@@ -1441,22 +1441,12 @@ async function saveEdit() {
   btn.innerHTML = '<span class="spinner"></span>';
 
   const tsInput = document.getElementById('editTimestamp')?.value;
-  // Only update timestamp when corrupt (epoch / midnight) or user explicitly changed it.
-  // This avoids GAS re-writing a valid timestamp and mangling the time via timezone conversion.
-  const isCorrupt = r.timestamp && (
-    r.timestamp.startsWith('1970-01-01') ||
-    r.timestamp.endsWith('T00:00:00.000Z')
-  );
-  const wasChanged = tsInput && (() => {
+  // Always pass the timestamp from the input — GAS now stores it as plain text, preserving the exact time.
+  let newTimestamp;
+  if (tsInput) {
     const parsed = new Date(tsInput);
-    if (isNaN(parsed.getTime())) return false;
-    const orig = new Date(r.timestamp);
-    return isNaN(orig.getTime()) || Math.abs(parsed.getTime() - orig.getTime()) > 60000;
-  })();
-  const newTimestamp = (isCorrupt || wasChanged) ? (() => {
-    const p = new Date(tsInput);
-    return isNaN(p.getTime()) ? undefined : p.toISOString();
-  })() : undefined;
+    newTimestamp = isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
+  }
 
   try {
     if (r.type === 'lactancia') {
