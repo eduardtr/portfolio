@@ -110,6 +110,45 @@
       color: #e06292;
     }
 
+    /* Vitamina D Banner */
+    .vitamina-banner {
+      display: none;
+      background: linear-gradient(135deg, #fff3cd, #ffeeba);
+      border: 2px solid #ffc107;
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      margin: 15px 0;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2);
+      animation: slideDown 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .vitamina-banner.active { display: block; }
+
+    .vitamina-banner .vb-icon { font-size: 1.4rem; margin-bottom: 4px; }
+
+    .vitamina-banner .vb-text {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #856404;
+      margin-bottom: 10px;
+    }
+
+    .vitamina-banner .vb-btn {
+      padding: 8px 24px;
+      background: #ffc107;
+      color: #856404;
+      border: none;
+      border-radius: 50px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .vitamina-banner .vb-btn:hover { background: #ffca2c; transform: scale(1.03); }
+
     /* Lactancia Active Banner */
     .lactancia-banner {
       display: none;
@@ -212,7 +251,7 @@
     /* Action Buttons */
     .action-buttons {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 15px;
       margin: 20px 0;
     }
@@ -243,7 +282,6 @@
     .action-btn .icon { font-size: 2.5rem; }
 
     .btn-pipi { background: linear-gradient(135deg, var(--yellow), #FFD700); color: var(--brown); }
-    .btn-caca { background: linear-gradient(135deg, #A0522D, #6B3E26); color: white; }
     .btn-lactancia { background: linear-gradient(135deg, var(--pink), var(--pink-dark)); color: white; }
     .btn-peso { background: linear-gradient(135deg, #74C0FC, #1C7ED6); color: white; }
 
@@ -277,7 +315,6 @@
     .summary-card .sum-value { font-size: 1.6rem; font-weight: 800; }
     .summary-card .sum-label { font-size: 0.75rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     .summary-card.pipi .sum-value { color: #B8860B; }
-    .summary-card.caca .sum-value { color: #6B3E26; }
     .summary-card.lactancia .sum-value { color: var(--pink-dark); }
 
     .summary-bar.lact-stats {
@@ -623,25 +660,20 @@
     <div class="nf-time" id="nextFeedingTime">--:--</div>
   </div>
 
+  <!-- Vitamina D Banner -->
+  <div class="vitamina-banner" id="vitaminaBanner">
+    <div class="vb-icon">🌟</div>
+    <div class="vb-text">¡Es hora de la Vitamina D!</div>
+    <button class="vb-btn" onclick="dismissVitaminaD()">✓ Marcar como dada</button>
+  </div>
+
   <!-- Action Buttons -->
   <div class="action-buttons">
-    <button class="action-btn btn-pipi" onclick="openQuickModal('pipi')">
-      <span class="icon">💧</span>
-      Pipí
-    </button>
-    <button class="action-btn btn-caca" onclick="openQuickModal('caca')">
-      <span class="icon">💩</span>
-      Caca
-    </button>
     <button class="action-btn btn-lactancia" id="btnLactancia" onclick="startLactancia()">
       <span class="icon">🍼</span>
       Lactancia
     </button>
-  </div>
-
-  <!-- Weight Button -->
-  <div style="margin: 15px 0;">
-    <button class="action-btn btn-peso" onclick="openPesoModal()" style="width:100%;border-radius:20px;padding:20px;">
+    <button class="action-btn btn-peso" onclick="openPesoModal()">
       <span class="icon">⚖️</span>
       Registrar peso
     </button>
@@ -654,29 +686,10 @@
       <div class="sum-value" id="avgPipi">–</div>
       <div class="sum-label">pipí / día</div>
     </div>
-    <div class="summary-card caca">
-      <div class="sum-icon">💩</div>
-      <div class="sum-value" id="avgCaca">–</div>
-      <div class="sum-label">caca / día</div>
-    </div>
-    <div class="summary-card lactancia">
-      <div class="sum-icon">🍼</div>
-      <div class="sum-value" id="avgLactancia">–</div>
-      <div class="sum-label">lact. / día</div>
-    </div>
-  </div>
-
-  <!-- Lactancia Stats -->
-  <div class="summary-bar lact-stats">
     <div class="summary-card">
       <div class="sum-icon">📊</div>
       <div class="sum-value" id="avgDurLact">–</div>
       <div class="sum-label">min / toma · 7d</div>
-    </div>
-    <div class="summary-card">
-      <div class="sum-icon">📅</div>
-      <div class="sum-value" id="avgDurToday">–</div>
-      <div class="sum-label">min / toma · hoy</div>
     </div>
     <div class="summary-card">
       <div class="sum-icon">🍼</div>
@@ -687,13 +700,7 @@
 
   <!-- Chart -->
   <section class="chart-section">
-    <h2>📈 Evolución (últimos 7 días)</h2>
-    <div class="chart-tabs">
-      <button class="chart-tab active" onclick="setChartType('all')">Todos</button>
-      <button class="chart-tab" onclick="setChartType('pipi')">💧 Pipí</button>
-      <button class="chart-tab" onclick="setChartType('caca')">💩 Caca</button>
-      <button class="chart-tab" onclick="setChartType('lactancia')">🍼 Lactancia</button>
-    </div>
+    <h2>📈 Tomas diarias (últimos 7 días)</h2>
     <canvas id="chart" style="display:block;width:100%;"></canvas>
   </section>
 
@@ -790,8 +797,8 @@
 // ================================================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLEvJNV-ordsggRrv_MaSp3HKNpJwB5oiOI-bUayXumWrg8WjHK21bwyVaYIQHZbUzYw/exec';
 
-const TYPE_ICONS = { pipi: '💧', caca: '💩', lactancia: '🍼', peso: '⚖️' };
-const TYPE_LABELS = { pipi: 'Pipí', caca: 'Caca', lactancia: 'Lactancia', peso: 'Peso' };
+const TYPE_ICONS = { pipi: '💧', lactancia: '🍼', peso: '⚖️' };
+const TYPE_LABELS = { pipi: 'Pipí', lactancia: 'Lactancia', peso: 'Peso' };
 
 const SESSION_KEY = 'bt_lactancia_inicio';
 const SESSION_ROW_KEY = 'bt_lactancia_row_id';
@@ -814,6 +821,33 @@ function showLoader() {
 
 function hideLoader() {
   document.getElementById('loader').classList.add('hidden');
+}
+
+// ================================================================
+// VITAMINA D BANNER
+// ================================================================
+
+const VITAMINA_DISMISSED_KEY = 'bt_vitamina_dismissed';
+
+function initVitaminaBanner() {
+  const banner = document.getElementById('vitaminaBanner');
+  if (!banner) return;
+  // Dismissed today? Only show if not dismissed
+  const dismissed = localStorage.getItem(VITAMINA_DISMISSED_KEY);
+  const today = new Date().toISOString().split('T')[0];
+  if (dismissed !== today) {
+    banner.classList.add('active');
+  } else {
+    banner.classList.remove('active');
+  }
+}
+
+function dismissVitaminaD() {
+  const today = new Date().toISOString().split('T')[0];
+  localStorage.setItem(VITAMINA_DISMISSED_KEY, today);
+  const banner = document.getElementById('vitaminaBanner');
+  if (banner) banner.classList.remove('active');
+  showToast('✅ Vitamina D marcada');
 }
 
 // ================================================================
@@ -843,6 +877,7 @@ document.addEventListener('DOMContentLoaded', () => {
     timerInterval = setInterval(updateBanTimer, 1);
   }
 
+  initVitaminaBanner();
   showLoader();
   loadRecords();
   setInterval(loadRecords, 30000);
@@ -1102,16 +1137,15 @@ function renderTodaySummary() {
   const days = getLast7Days();
   const today = new Date().toISOString().split('T')[0];
 
-  const avg = type => {
-    const counts = days.map(d => allRecords.filter(r => r.timestamp.startsWith(d) && r.type === type).length);
+  // Tomas per day (avg over 7 days)
+  const avgTomas = () => {
+    const counts = days.map(d => allRecords.filter(r => r.timestamp.startsWith(d) && r.type === 'lactancia').length);
     const total = counts.reduce((a, b) => a + b, 0);
     const daysWithRecords = counts.filter(c => c > 0).length;
     return daysWithRecords > 0 ? (total / daysWithRecords).toFixed(1) : '–';
   };
 
-  document.getElementById('avgPipi').textContent = avg('pipi');
-  document.getElementById('avgCaca').textContent = avg('caca');
-  document.getElementById('avgLactancia').textContent = avg('lactancia');
+  document.getElementById('avgPipi').textContent = avgTomas();
 
   // Lactancia duration stats
   const lact7d = allRecords.filter(r => r.type === 'lactancia' && r.duracion_min);
@@ -1124,13 +1158,13 @@ function renderTodaySummary() {
   };
 
   document.getElementById('avgDurLact').textContent = avgDur(lact7d);
-  document.getElementById('avgDurToday').textContent = avgDur(lactToday);
   document.getElementById('lactTodayCount').textContent = lactToday.length || '–';
 }
 
 function renderLog() {
   const container = document.getElementById('logContainer');
-  const recent = allRecords.slice(0, 20);
+  // Only show lactation and peso records
+  const recent = allRecords.filter(r => r.type === 'lactancia' || r.type === 'peso').slice(0, 20);
 
   if (recent.length === 0) {
     container.innerHTML = '<div class="no-log">Sin registros todavía. ¡Vamos!</div>';
@@ -1172,15 +1206,6 @@ function formatTimestamp(ts) {
 // CHART
 // ================================================================
 
-function setChartType(type) {
-  currentChartType = type;
-  document.querySelectorAll('.chart-tab').forEach((t, i) => {
-    const types = ['all', 'pipi', 'caca', 'lactancia'];
-    t.classList.toggle('active', types[i] === type);
-  });
-  renderChart();
-}
-
 function renderChart() {
   const ctx = document.getElementById('chart').getContext('2d');
   const days = getLast7Days();
@@ -1189,53 +1214,34 @@ function renderChart() {
     return dt.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
   });
 
-  const pipi = days.map(d => allRecords.filter(r => r.timestamp.startsWith(d) && r.type === 'pipi').length);
-  const caca = days.map(d => allRecords.filter(r => r.timestamp.startsWith(d) && r.type === 'caca').length);
   const lact = days.map(d => allRecords.filter(r => r.timestamp.startsWith(d) && r.type === 'lactancia').length);
-
-  let datasets = [];
-  if (currentChartType === 'all') {
-    datasets = [
-      { label: '💧 Pipí', data: pipi, borderColor: 'rgba(255,200,0,1)', backgroundColor: 'rgba(255,200,0,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 },
-      { label: '💩 Caca', data: caca, borderColor: 'rgba(160,82,45,1)', backgroundColor: 'rgba(160,82,45,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 },
-      { label: '🍼 Lactancia', data: lact, borderColor: 'rgba(248,164,200,1)', backgroundColor: 'rgba(248,164,200,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 }
-    ];
-  } else if (currentChartType === 'pipi') {
-    datasets = [{ label: '💧 Pipí', data: pipi, borderColor: 'rgba(255,200,0,1)', backgroundColor: 'rgba(255,200,0,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 }];
-  } else if (currentChartType === 'caca') {
-    datasets = [{ label: '💩 Caca', data: caca, borderColor: 'rgba(160,82,45,1)', backgroundColor: 'rgba(160,82,45,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 }];
-  } else {
-    datasets = [{ label: '🍼 Lactancia', data: lact, borderColor: 'rgba(248,164,200,1)', backgroundColor: 'rgba(248,164,200,0.7)', pointRadius: 5, pointHoverRadius: 7, tension: 0, fill: false, borderWidth: 2.5 }];
-  }
-
-  // Ensure all data is valid numbers (defensive)
   const safeData = arr => arr.map(v => (typeof v === 'number' && !isNaN(v) ? v : 0));
-  const maxVal = Math.max(1, ...safeData(pipi), ...safeData(caca), ...safeData(lact));
 
   if (chart) chart.destroy();
   try {
     chart = new Chart(ctx, {
-      type: 'line',
+      type: 'bar',
       data: {
         labels,
-        datasets: datasets.map(ds => ({ ...ds, data: safeData(ds.data) }))
+        datasets: [{
+          label: '🍼 Tomas',
+          data: safeData(lact),
+          backgroundColor: 'rgba(248,164,200,0.8)',
+          borderColor: 'rgba(248,164,200,1)',
+          borderWidth: 2,
+          borderRadius: 8
+        }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
-        aspectRatio: 1.5,
+        aspectRatio: 1.8,
         animation: false,
-        plugins: {
-          legend: {
-            display: currentChartType === 'all',
-            labels: { font: { family: 'Nunito', size: 13 }, boxWidth: 16, boxHeight: 16 }
-          }
-        },
+        plugins: { legend: { display: false } },
         scales: {
           y: {
             beginAtZero: true,
             min: 0,
-            grace: '0%',
             ticks: { stepSize: 1, font: { family: 'Nunito' }, precision: 0, maxTicksLimit: 8 }
           },
           x: { grid: { display: false }, ticks: { font: { family: 'Nunito', size: 12 } } }
