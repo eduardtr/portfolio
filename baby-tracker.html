@@ -827,27 +827,55 @@ function hideLoader() {
 // VITAMINA D BANNER
 // ================================================================
 
-const VITAMINA_DISMISSED_KEY = 'bt_vitamina_dismissed';
-
 function initVitaminaBanner() {
   const banner = document.getElementById('vitaminaBanner');
   if (!banner) return;
-  // Dismissed today? Only show if not dismissed
-  const dismissed = localStorage.getItem(VITAMINA_DISMISSED_KEY);
-  const today = new Date().toISOString().split('T')[0];
-  if (dismissed !== today) {
-    banner.classList.add('active');
-  } else {
-    banner.classList.remove('active');
-  }
+  // Check backend for today's status
+  fetch(`${API_URL}?action=getVitaminaD`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.given_today) {
+        banner.classList.remove('active');
+      } else {
+        banner.classList.add('active');
+      }
+    })
+    .catch(() => {
+      // Fallback: hide if backend unavailable
+      banner.classList.remove('active');
+    });
 }
 
 function dismissVitaminaD() {
-  const today = new Date().toISOString().split('T')[0];
-  localStorage.setItem(VITAMINA_DISMISSED_KEY, today);
   const banner = document.getElementById('vitaminaBanner');
-  if (banner) banner.classList.remove('active');
-  showToast('✅ Vitamina D marcada');
+  banner.classList.remove('active');
+
+  // Ask for parent name
+  const nombre = prompt('¿Quién ha dado la Vitamina D?');
+  if (nombre === null) {
+    // Cancelled — re-show banner
+    banner.classList.add('active');
+    return;
+  }
+
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'logVitaminaD', given_by: nombre.trim() || '?' })
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast('✅ Vitamina D marcada por ' + (nombre.trim() || '?'));
+      } else {
+        showToast('❌ Error: ' + (data.error || 'desconocido'));
+        banner.classList.add('active'); // re-show on failure
+      }
+    })
+    .catch(() => {
+      showToast('❌ Error de conexión');
+      banner.classList.add('active'); // re-show on failure
+    });
 }
 
 // ================================================================
