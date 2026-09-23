@@ -850,31 +850,23 @@ function dismissVitaminaD() {
   const banner = document.getElementById('vitaminaBanner');
   banner.classList.remove('active');
 
-  // Ask for parent name
-  const nombre = prompt('¿Quién ha dado la Vitamina D?');
-  if (nombre === null) {
-    // Cancelled — re-show banner
-    banner.classList.add('active');
-    return;
-  }
-
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'logVitaminaD', given_by: nombre.trim() || '?' })
+    body: JSON.stringify({ action: 'logVitaminaD', given_by: '?' })
   })
     .then(r => r.json())
     .then(data => {
       if (data.success) {
-        showToast('✅ Vitamina D marcada por ' + (nombre.trim() || '?'));
+        showToast('✅ Vitamina D marcada');
       } else {
         showToast('❌ Error: ' + (data.error || 'desconocido'));
-        banner.classList.add('active'); // re-show on failure
+        banner.classList.add('active');
       }
     })
     .catch(() => {
       showToast('❌ Error de conexión');
-      banner.classList.add('active'); // re-show on failure
+      banner.classList.add('active');
     });
 }
 
