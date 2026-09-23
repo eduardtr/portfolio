@@ -830,18 +830,28 @@ function hideLoader() {
 function initVitaminaBanner() {
   const banner = document.getElementById('vitaminaBanner');
   if (!banner) return;
-  // Check backend for today's status
+
+  // Fallback: check localStorage first (works even if API fails)
+  const dismissedToday = localStorage.getItem('bt_vitamina_dismissed');
+  const today = new Date().toISOString().split('T')[0];
+  if (dismissedToday === today) {
+    banner.classList.remove('active');
+    return;
+  }
+
+  // Primary: check backend
   fetch(`${API_URL}?action=getVitaminaD`)
     .then(r => r.json())
     .then(data => {
       if (data.given_today) {
         banner.classList.remove('active');
+        localStorage.setItem('bt_vitamina_dismissed', today);
       } else {
         banner.classList.add('active');
       }
     })
     .catch(() => {
-      // Fallback: hide if backend unavailable
+      // Backend unavailable — use localStorage fallback
       banner.classList.remove('active');
     });
 }
@@ -849,6 +859,10 @@ function initVitaminaBanner() {
 function dismissVitaminaD() {
   const banner = document.getElementById('vitaminaBanner');
   banner.classList.remove('active');
+
+  // Store dismissal in localStorage immediately
+  const today = new Date().toISOString().split('T')[0];
+  localStorage.setItem('bt_vitamina_dismissed', today);
 
   fetch(API_URL, {
     method: 'POST',
@@ -865,8 +879,7 @@ function dismissVitaminaD() {
       }
     })
     .catch(() => {
-      showToast('❌ Error de conexión');
-      banner.classList.add('active');
+      showToast('✅ Vitamina D marcada (sin conexión)');
     });
 }
 
