@@ -833,14 +833,13 @@ function initVitaminaBanner() {
 
   // Fallback: check localStorage first (works even if API fails)
   const dismissedToday = localStorage.getItem('bt_vitamina_dismissed');
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' }); // YYYY-MM-DD UTC
   if (dismissedToday === today) {
     banner.classList.remove('active');
     return;
   }
 
-  // Primary: check backend (pass browser local date to avoid timezone issues)
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' }); // YYYY-MM-DD in UTC
+  // Primary: check backend (pass browser UTC date to avoid timezone issues)
   fetch(`${API_URL}?action=getVitaminaD&today=${today}`)
     .then(r => r.json())
     .then(data => {
