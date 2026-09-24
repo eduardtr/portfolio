@@ -888,7 +888,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  // Restore persisted lactation session (local + backend)
+  // Restore persisted lactation session BEFORE loader (so banner shows immediately if active)
   await checkAndRestoreLactancia();
 
   initVitaminaBanner();
@@ -1064,23 +1064,45 @@ async function stopLactancia() {
 }
 
 async function checkAndRestoreLactancia() {
-  // Called on page load — check if there's an active session in the backend
-  const session = await checkBackendLactancia();
-  if (session.active && session.start) {
-    sessionInicio = session.start;
-    localStorage.setItem(SESSION_KEY, sessionInicio);
-    if (session.row_id) localStorage.setItem(SESSION_ROW_KEY, session.row_id);
-
+  // Step 1: Restore from localStorage IMMEDIATELY (no network needed)
+  const localInicio = localStorage.getItem(SESSION_KEY);
+  const localRowId = localStorage.getItem(SESSION_ROW_KEY);
+  if (localInicio) {
+    sessionInicio = localInicio;
     const banner = document.getElementById('lactanciaBanner');
     banner.classList.add('active');
     document.getElementById('btnLactancia').classList.add('in-progress');
     document.getElementById('banSince').textContent = 'desde las ' + timeFormat(new Date(sessionInicio));
     document.getElementById('banTimer').textContent = '00:00';
     document.getElementById('banNotas').value = '';
-    document.getElementById('banSaveStatus').textContent = '✓ Sesión activa';
-
+    document.getElementById('banSaveStatus').textContent = '⏳ Sincronizando…';
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(updateBanTimer, 1);
+  }
+
+  // Step 2: Verify with backend
+  const session = await checkBackendLactancia();
+  if (session.active && session.start) {
+    // Backend confirms active — restore state
+    sessionInicio = session.start;
+    localStorage.setItem(SESSION_KEY, sessionInicio);
+    if (session.row_id) localStorage.setItem(SESSION_ROW_KEY, session.row_id);
+    document.getElementById('banSaveStatus').textContent = '✓ Sesión activa';
+    // Ensure banner is shown (may not be if no localStorage)
+    document.getElementById('lactanciaBanner').classList.add('active');
+    document.getElementById('btnLactancia').classList.add('in-progress');
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(updateBanTimer, 1);
+  } else {
+    // Backend has no active session — clear stale local state
+    if (localInicio) {
+      sessionInicio = null;
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_ROW_KEY);
+      document.getElementById('lactanciaBanner').classList.remove('active');
+      document.getElementById('btnLactancia').classList.remove('in-progress');
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
   }
 }
 
