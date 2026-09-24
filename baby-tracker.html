@@ -839,8 +839,9 @@ function initVitaminaBanner() {
     return;
   }
 
-  // Primary: check backend
-  fetch(`${API_URL}?action=getVitaminaD`)
+  // Primary: check backend (pass browser local date to avoid timezone issues)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' }); // YYYY-MM-DD in UTC
+  fetch(`${API_URL}?action=getVitaminaD&today=${today}`)
     .then(r => r.json())
     .then(data => {
       if (data.given_today) {
@@ -860,14 +861,14 @@ function dismissVitaminaD() {
   const banner = document.getElementById('vitaminaBanner');
   banner.classList.remove('active');
 
-  // Store dismissal in localStorage immediately
-  const today = new Date().toISOString().split('T')[0];
+  // Store dismissal in localStorage immediately (same UTC date formula as frontend checks)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' }); // YYYY-MM-DD UTC
   localStorage.setItem('bt_vitamina_dismissed', today);
 
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'logVitaminaD', given_by: '?' })
+    body: JSON.stringify({ action: 'logVitaminaD', today })
   })
     .then(r => r.json())
     .then(data => {
@@ -906,9 +907,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // NEXT FEEDING BANNER
 // ================================================================
 
-function getFeedingIntervalHours(timestamp) {
-  // Use the CURRENT time to decide interval, not the last feed time.
-  // This avoids timezone issues with timestamps stored as UTC.
+// Decide interval based on what the NEXT feeding window will be
+function getFeedingIntervalHours() {
   const now = new Date();
   const h = now.getHours();
   // Morning: 8:00–20:00 → 2h, Night: 20:00–8:00 → 3h
@@ -920,7 +920,7 @@ function updateNextFeedingBanner() {
   const timeEl = document.getElementById('nextFeedingTime');
   if (!banner || !timeEl) return;
 
-  // Find the most recent lactation record
+  // Find the most recent lactation record with a valid timestamp
   const lactRecords = allRecords
     .filter(r => r.type === 'lactancia' && r.timestamp)
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -930,25 +930,40 @@ function updateNextFeedingBanner() {
     return;
   }
 
-  const lastLact = new Date(lactRecords[0].timestamp);
-  const intervalHours = getFeedingIntervalHours(); // uses current time
-  const nextFeeding = new Date(lastLact.getTime() + intervalHours * 3600 * 1000);
-  const now = new Date();
+  // Parse the timestamp — handle both ISO strings and Date objects from GAS
+  let lastLactMs;
+  const ts = lactRecords[0].timestamp;
+  if (ts instanceof Date) {
+    lastLactMs = ts.getTime();
+  } else {
+    lastLactMs = new Date(ts).getTime();
+  }
+  if (isNaN(lastLactMs)) {
+    banner.classList.remove('active');
+    return;
+  }
+
+  const lastLact = new Date(lastLactMs);
+  const intervalHours = getFeedingIntervalHours();
+  const nextFeedingMs = lastLactMs + intervalHours * 3600 * 1000;
+  const nowMs = Date.now();
+  const nextFeeding = new Date(nextFeedingMs);
+  const now = new Date(nowMs);
 
   banner.classList.add('active');
 
   const timeStr = nextFeeding.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
-  if (nextFeeding <= now) {
+  if (nextFeedingMs <= nowMs) {
     // Overdue
-    const overdueMin = Math.floor((now - nextFeeding) / 60000);
+    const overdueMin = Math.floor((nowMs - nextFeedingMs) / 60000);
     const overdueH = Math.floor(overdueMin / 60);
     const overdueM = overdueMin % 60;
     const overdueStr = overdueH > 0 ? `${overdueH}h ${overdueM}m` : `${overdueM}m`;
     timeEl.innerHTML = `<span class="nf-overdue">⚠️ Retrasada</span> <span style="font-size:0.9rem;color:var(--text-light);font-weight:600;">(${timeStr} · hace ${overdueStr})</span>`;
   } else {
     // Not yet due
-    const diffMs = nextFeeding - now;
+    const diffMs = nextFeedingMs - nowMs;
     const diffMin = Math.floor(diffMs / 60000);
     const h = Math.floor(diffMin / 60);
     const m = diffMin % 60;
