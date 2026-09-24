@@ -831,27 +831,22 @@ function initVitaminaBanner() {
   const banner = document.getElementById('vitaminaBanner');
   if (!banner) return;
 
-  // Fallback: check localStorage first (works even if API fails)
-  const dismissedToday = localStorage.getItem('bt_vitamina_dismissed');
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' }); // YYYY-MM-DD UTC
-  if (dismissedToday === today) {
-    banner.classList.remove('active');
-    return;
-  }
 
-  // Primary: check backend (pass browser UTC date to avoid timezone issues)
-  fetch(`${API_URL}?action=getVitaminaD&today=${today}`)
-    .then(r => r.json())
+  // Always check backend (no localStorage fallback)
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  fetch(`${API_URL}?action=getVitaminaD&today=${today}`, { signal: controller.signal })
+    .then(r => { clearTimeout(timeout); return r.json(); })
     .then(data => {
       if (data.given_today) {
         banner.classList.remove('active');
-        localStorage.setItem('bt_vitamina_dismissed', today);
       } else {
         banner.classList.add('active');
       }
     })
     .catch(() => {
-      // Backend unavailable — use localStorage fallback
+      clearTimeout(timeout);
       banner.classList.remove('active');
     });
 }
@@ -1127,7 +1122,10 @@ function toDatetimeLocal(d) {
 
 async function loadRecords() {
   try {
-    const resp = await fetch(`${API_URL}?action=getRecords`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const resp = await fetch(`${API_URL}?action=getRecords`, { signal: controller.signal });
+    clearTimeout(timeout);
     const data = await resp.json();
     allRecords = data.records || [];
     renderTodaySummary();
