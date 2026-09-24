@@ -1078,7 +1078,7 @@ async function checkAndRestoreLactancia() {
 function cancelLactancia() {
   clearInterval(timerInterval);
   timerInterval = null;
-  const prevInicio = sessionInicio;
+  const rowId = localStorage.getItem(SESSION_ROW_KEY);
   sessionInicio = null;
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_ROW_KEY);
@@ -1088,11 +1088,13 @@ function cancelLactancia() {
   updateNextFeedingBanner();
 
   // Notify backend to cancel
-  fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'cancelLactancia', start: prevInicio })
-  }).catch(() => {});
+  if (rowId) {
+    fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'cancelLactancia', row_id: rowId })
+    }).catch(() => {});
+  }
 }
 
 function timeFormat(d) {
