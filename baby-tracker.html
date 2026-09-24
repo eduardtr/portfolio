@@ -887,28 +887,14 @@ function dismissVitaminaD() {
 // INIT
 // ================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const today = new Date();
   document.getElementById('todayLabel').textContent = today.toLocaleDateString('es-ES', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
-  // Restore persisted lactation session
-  const saved = localStorage.getItem(SESSION_KEY);
-  if (saved) {
-    sessionInicio = saved;
-    const startTime = new Date(sessionInicio);
-    document.getElementById('lactanciaBanner').classList.add('active');
-    document.getElementById('btnLactancia').classList.add('in-progress');
-    document.getElementById('banSince').textContent = 'desde las ' + timeFormat(startTime);
-    document.getElementById('banTimer').textContent = '00:00';
-    document.getElementById('banNotas').value = '';
-    const savedRowId = localStorage.getItem(SESSION_ROW_KEY);
-    document.getElementById('banSaveStatus').textContent =
-      savedRowId ? '✓ Guardado' : '⚠️ Sin conexión';
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(updateBanTimer, 1);
-  }
+  // Restore persisted lactation session (local + backend)
+  await checkAndRestoreLactancia();
 
   initVitaminaBanner();
   showLoader();
@@ -921,8 +907,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // ================================================================
 
 function getFeedingIntervalHours(timestamp) {
-  const d = new Date(timestamp);
-  const h = d.getHours();
+  // Use the CURRENT time to decide interval, not the last feed time.
+  // This avoids timezone issues with timestamps stored as UTC.
+  const now = new Date();
+  const h = now.getHours();
   // Morning: 8:00–20:00 → 2h, Night: 20:00–8:00 → 3h
   return (h >= 8 && h < 20) ? 2 : 3;
 }
@@ -931,12 +919,6 @@ function updateNextFeedingBanner() {
   const banner = document.getElementById('nextFeedingBanner');
   const timeEl = document.getElementById('nextFeedingTime');
   if (!banner || !timeEl) return;
-
-  // Hide if a lactation session is active
-  if (sessionInicio) {
-    banner.classList.remove('active');
-    return;
-  }
 
   // Find the most recent lactation record
   const lactRecords = allRecords
@@ -949,46 +931,54 @@ function updateNextFeedingBanner() {
   }
 
   const lastLact = new Date(lactRecords[0].timestamp);
-  const intervalHours = getFeedingIntervalHours(lastLact);
+  const intervalHours = getFeedingIntervalHours(); // uses current time
   const nextFeeding = new Date(lastLact.getTime() + intervalHours * 3600 * 1000);
   const now = new Date();
 
   banner.classList.add('active');
 
-  const timeStr = nextFeeding.toTimeString().substring(0, 5);
+  const timeStr = nextFeeding.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
   if (nextFeeding <= now) {
-    // Overdue — show estimated time alongside the overdue warning
+    // Overdue
     const overdueMin = Math.floor((now - nextFeeding) / 60000);
     const overdueH = Math.floor(overdueMin / 60);
     const overdueM = overdueMin % 60;
     const overdueStr = overdueH > 0 ? `${overdueH}h ${overdueM}m` : `${overdueM}m`;
     timeEl.innerHTML = `<span class="nf-overdue">⚠️ Retrasada</span> <span style="font-size:0.9rem;color:var(--text-light);font-weight:600;">(${timeStr} · hace ${overdueStr})</span>`;
   } else {
-    // Show countdown or time
+    // Not yet due
     const diffMs = nextFeeding - now;
     const diffMin = Math.floor(diffMs / 60000);
     const h = Math.floor(diffMin / 60);
     const m = diffMin % 60;
-
     const countdownStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
-
     timeEl.innerHTML = `<span class="nf-time">${timeStr}</span> <span style="font-size:0.85rem;color:var(--text-light);font-weight:600;">(en ${countdownStr})</span>`;
   }
 }
 
 // ================================================================
-// LACTANCIA SESSION
+// LACTANCIA SESSION (backend-driven)
 // ================================================================
 
+async function checkBackendLactancia() {
+  try {
+    const resp = await fetch(`${API_URL}?action=getLactanciaSession`);
+    const data = await resp.json();
+    if (data.active && data.start) {
+      return { active: true, start: data.start, row_id: data.row_id || null };
+    }
+  } catch {}
+  return { active: false };
+}
+
 function startLactancia() {
-  if (sessionInicio) return; // already in progress
+  if (sessionInicio) return; // already in progress (local)
 
   const inicio = new Date();
   sessionInicio = inicio.toISOString();
   localStorage.setItem(SESSION_KEY, sessionInicio);
 
-  // Register start in backend immediately (another person can stop it)
   const banner = document.getElementById('lactanciaBanner');
   banner.classList.add('active');
   document.getElementById('btnLactancia').classList.add('in-progress');
@@ -1000,11 +990,18 @@ function startLactancia() {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(updateBanTimer, 1);
 
-  logEvent('lactancia', 0, '')
-    .then(result => {
-      // Store row_id so stopLactancia can update this same record
-      localStorage.setItem(SESSION_ROW_KEY, result.row_id);
-      document.getElementById('banSaveStatus').textContent = '✓ Guardado';
+  // Register in backend immediately so other devices can stop it
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'startLactancia', start: sessionInicio })
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        localStorage.setItem(SESSION_ROW_KEY, data.row_id || '');
+        document.getElementById('banSaveStatus').textContent = '✓ Guardado';
+      }
     })
     .catch(() => {
       document.getElementById('banSaveStatus').textContent = '⚠️ Sin conexión';
@@ -1037,24 +1034,18 @@ async function stopLactancia() {
   const rowId = localStorage.getItem(SESSION_ROW_KEY);
   localStorage.removeItem(SESSION_ROW_KEY);
 
-  // Hide banner
   document.getElementById('lactanciaBanner').classList.remove('active');
   document.getElementById('btnLactancia').classList.remove('in-progress');
 
   const notas = document.getElementById('banNotas').value;
 
   try {
-    if (rowId) {
-      // Fetch the record to get the real start timestamp stored in backend
-      const records = await loadRecordsSilent();
-      const record = records.find(r => r.row_id === rowId);
-      const startTs = record ? record.timestamp : inicio.toISOString();
-      // Update record with start timestamp and duration (not end timestamp)
-      await updateRecord(rowId, 'lactancia', Math.max(1, diff), notas, startTs);
-    } else {
-      // Legacy session (pre-update): save with start timestamp
-      await logEventWithTimestamp('lactancia', Math.max(1, diff), notas, inicio.toISOString());
-    }
+    // Stop session in backend
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'stopLactancia', row_id: rowId, duracion_min: Math.max(1, diff), notas })
+    });
     showToast('🍼 Lactancia registrada (' + diff + ' min)');
     await loadRecords();
     updateNextFeedingBanner();
@@ -1063,15 +1054,31 @@ async function stopLactancia() {
   }
 }
 
-async function loadRecordsSilent() {
-  const resp = await fetch(`${API_URL}?action=getRecords`);
-  const data = await resp.json();
-  return data.records || [];
+async function checkAndRestoreLactancia() {
+  // Called on page load — check if there's an active session in the backend
+  const session = await checkBackendLactancia();
+  if (session.active && session.start) {
+    sessionInicio = session.start;
+    localStorage.setItem(SESSION_KEY, sessionInicio);
+    if (session.row_id) localStorage.setItem(SESSION_ROW_KEY, session.row_id);
+
+    const banner = document.getElementById('lactanciaBanner');
+    banner.classList.add('active');
+    document.getElementById('btnLactancia').classList.add('in-progress');
+    document.getElementById('banSince').textContent = 'desde las ' + timeFormat(new Date(sessionInicio));
+    document.getElementById('banTimer').textContent = '00:00';
+    document.getElementById('banNotas').value = '';
+    document.getElementById('banSaveStatus').textContent = '✓ Sesión activa';
+
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = setInterval(updateBanTimer, 1);
+  }
 }
 
 function cancelLactancia() {
   clearInterval(timerInterval);
   timerInterval = null;
+  const prevInicio = sessionInicio;
   sessionInicio = null;
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_ROW_KEY);
@@ -1079,6 +1086,13 @@ function cancelLactancia() {
   document.getElementById('btnLactancia').classList.remove('in-progress');
   showToast('Lactancia cancelada');
   updateNextFeedingBanner();
+
+  // Notify backend to cancel
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'cancelLactancia', start: prevInicio })
+  }).catch(() => {});
 }
 
 function timeFormat(d) {
