@@ -831,34 +831,66 @@ function initVitaminaBanner() {
   const banner = document.getElementById('vitaminaBanner');
   if (!banner) return;
 
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' }); // YYYY-MM-DD UTC
+  // Show cached state immediately (no network)
+  const cachedVitamina = sessionStorage.getItem('bt_vitamina_dismissed_today');
+  if (cachedVitamina === '1') {
+    banner.classList.remove('active');
+  }
+}
 
-  // Always check backend (no localStorage fallback)
+// Refreshes both Vitamina D and Lactancia session in ONE batched call
+async function refreshCriticalState() {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' });
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  fetch(`${API_URL}?action=getVitaminaD&today=${today}`, { signal: controller.signal })
-    .then(r => { clearTimeout(timeout); return r.json(); })
-    .then(data => {
-      if (data.given_today) {
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const resp = await fetch(`${API_URL}?action=getCriticalState&today=${today}`, { signal: controller.signal });
+    clearTimeout(timeout);
+    const data = await resp.json();
+
+    // Update Vitamina D banner
+    const banner = document.getElementById('vitaminaBanner');
+    if (banner) {
+      if (data.vitamina_given_today) {
         banner.classList.remove('active');
+        sessionStorage.setItem('bt_vitamina_dismissed_today', '1');
       } else {
         banner.classList.add('active');
+        sessionStorage.setItem('bt_vitamina_dismissed_today', '0');
       }
-    })
-    .catch(() => {
-      clearTimeout(timeout);
-      banner.classList.remove('active');
-    });
+    }
+
+    // Update active lactation session if backend has one and we don't
+    if (data.lactancia && data.lactancia.active && data.lactancia.start && !sessionInicio) {
+      sessionInicio = data.lactancia.start;
+      localStorage.setItem(SESSION_KEY, sessionInicio);
+      if (data.lactancia.row_id) localStorage.setItem(SESSION_ROW_KEY, data.lactancia.row_id);
+      const lb = document.getElementById('lactanciaBanner');
+      if (lb) {
+        lb.classList.add('active');
+        document.getElementById('btnLactancia').classList.add('in-progress');
+        document.getElementById('banSince').textContent = 'desde las ' + timeFormat(new Date(sessionInicio));
+        document.getElementById('banSaveStatus').textContent = '✓ Sesión activa';
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(updateBanTimer, 1);
+      }
+    }
+  } catch {
+    clearTimeout(timeout);
+    // Network error — keep showing last known state
+  }
 }
 
 function dismissVitaminaD() {
   const banner = document.getElementById('vitaminaBanner');
   banner.classList.remove('active');
 
-  // Store dismissal in localStorage immediately (same UTC date formula as frontend checks)
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' }); // YYYY-MM-DD UTC
-  localStorage.setItem('bt_vitamina_dismissed', today);
+  // Cache dismissal instantly (no wait for backend)
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' });
+  sessionStorage.setItem('bt_vitamina_dismissed_today', '1');
 
+  // Fire-and-forget — don't await
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -871,10 +903,11 @@ function dismissVitaminaD() {
       } else {
         showToast('❌ Error: ' + (data.error || 'desconocido'));
         banner.classList.add('active');
+        sessionStorage.setItem('bt_vitamina_dismissed_today', '0');
       }
     })
     .catch(() => {
-      showToast('✅ Vitamina D marcada (sin conexión)');
+      showToast('⚠️ Vitamina D (sin conexión)');
     });
 }
 
@@ -892,9 +925,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   await checkAndRestoreLactancia();
 
   initVitaminaBanner();
+  // Fetch critical state once at startup (in background — non-blocking)
+  refreshCriticalState();
   showLoader();
   loadRecords();
-  setInterval(loadRecords, 30000);
+
+  // Background refresh every 5 min (was 30s — too aggressive)
+  setInterval(loadRecords, 5 * 60 * 1000);
+
+  // Refresh critical state (Vitamina D + Lactancia session) every 2 min
+  setInterval(refreshCriticalState, 2 * 60 * 1000);
 });
 
 // ================================================================
