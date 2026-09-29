@@ -777,7 +777,7 @@
 // ================================================================
 // CONFIG
 // ================================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbwLEvJNV-ordsggRrv_MaSp3HKNpJwB5oiOI-bUayXumWrg8WjHK21bwyVaYIQHZbUzYw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxPRiikcTUsDV3dowixq77EMLRJMVRJQQ8p35CpHRY9siBx45yAW0jsSyUG2O7uD_t20A/exec';
 
 const TYPE_ICONS = { pipi: '💧', lactancia: '🍼', peso: '⚖️' };
 const TYPE_LABELS = { pipi: 'Pipí', lactancia: 'Lactancia', peso: 'Peso' };
@@ -1564,14 +1564,19 @@ async function logPeso(pesoKg, notas) {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(body),
-      signal: controller.signal
+      signal: controller.signal,
+      redirect: 'manual' // Don't follow redirects — detect them
     });
     clearTimeout(timeout);
 
-    // Check Content-Type — must be JSON
+    // Type 0 = opaque redirect, Status 302 = manual redirect
+    if (resp.type === 'opaqueredirect' || resp.status === 301 || resp.status === 302 || resp.status === 303 || resp.status === 307 || resp.status === 308) {
+      throw new Error('Backend redirect (deployment puede estar bloqueado). Re-desplegar Apps Script.');
+    }
+
     const contentType = resp.headers.get('content-type') || '';
     if (!contentType.includes('json')) {
-      throw new Error('Backend devolvió respuesta no-JSON (¿URL incorrecta?)');
+      throw new Error('Backend devolvió respuesta no-JSON (¿URL incorrecta o deployment bloqueado?)');
     }
 
     const result = await resp.json();
