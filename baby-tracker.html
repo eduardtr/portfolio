@@ -1522,14 +1522,32 @@ async function savePeso() {
 
 async function logPeso(pesoKg, notas) {
   const body = { action: 'logPeso', peso_kg: pesoKg, notas };
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  });
-  const result = await resp.json();
-  if (!result.success) throw new Error(result.error);
-  return result;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    // Check Content-Type — must be JSON
+    const contentType = resp.headers.get('content-type') || '';
+    if (!contentType.includes('json')) {
+      throw new Error('Backend devolvió respuesta no-JSON (¿URL incorrecta?)');
+    }
+
+    const result = await resp.json();
+    if (!result.success) throw new Error(result.error || 'Error desconocido');
+    return result;
+  } catch (e) {
+    clearTimeout(timeout);
+    throw e;
+  }
 }
 
 // ================================================================
