@@ -823,12 +823,9 @@ function initVitaminaBanner() {
 // Refreshes both Vitamina D and Lactancia session in ONE batched call
 async function refreshCriticalState() {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'UTC' });
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
 
   try {
-    const resp = await fetch(`${API_URL}?action=getCriticalState&today=${today}`, { signal: controller.signal });
-    clearTimeout(timeout);
+    const resp = await fetch(`${API_URL}?action=getCriticalState&today=${today}`);
     const data = await resp.json();
 
     // Update Vitamina D banner
@@ -859,7 +856,6 @@ async function refreshCriticalState() {
       }
     }
   } catch {
-    clearTimeout(timeout);
     // Network error — keep showing last known state
   }
 }
@@ -1016,22 +1012,13 @@ function startLactancia() {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(updateBanTimer, 1);
 
-  // Register in backend (fire-and-forget) with timeout
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
+  // Register in backend (fire-and-forget)
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'startLactancia', start: sessionInicio }),
-    signal: controller.signal
+    body: JSON.stringify({ action: 'startLactancia', start: sessionInicio })
   })
-    .then(r => {
-      clearTimeout(timeout);
-      const ct = r.headers.get('content-type') || '';
-      if (!ct.includes('json')) throw new Error('No JSON');
-      return r.json();
-    })
+    .then(r => r.json())
     .then(data => {
       if (data.success) {
         localStorage.setItem(SESSION_ROW_KEY, data.row_id || '');
@@ -1039,7 +1026,6 @@ function startLactancia() {
       }
     })
     .catch(() => {
-      clearTimeout(timeout);
       document.getElementById('banSaveStatus').textContent = '⚠️ Sin conexión';
     });
 }
@@ -1075,30 +1061,19 @@ async function stopLactancia() {
 
   const notas = document.getElementById('banNotas').value;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
   try {
     const resp = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'stopLactancia', row_id: rowId, duracion_min: Math.max(1, diff), notas }),
-      signal: controller.signal
+      body: JSON.stringify({ action: 'stopLactancia', row_id: rowId, duracion_min: Math.max(1, diff), notas })
     });
-    clearTimeout(timeout);
-
-    const ct = resp.headers.get('content-type') || '';
-    if (!ct.includes('json')) throw new Error('Backend no devolvió JSON');
-
     const data = await resp.json();
     if (!data.success) throw new Error(data.error || 'Error desconocido');
 
     showToast('🍼 Lactancia registrada (' + diff + ' min)');
     await loadRecords();
     updateNextFeedingBanner();
-    // No polling — UI is already up to date
   } catch (e) {
-    clearTimeout(timeout);
     showToast('❌ Error: ' + e.message);
   }
 }
@@ -1184,10 +1159,7 @@ function toDatetimeLocal(d) {
 
 async function loadRecords() {
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    const resp = await fetch(`${API_URL}?action=getRecords`, { signal: controller.signal });
-    clearTimeout(timeout);
+    const resp = await fetch(`${API_URL}?action=getRecords`);
     const data = await resp.json();
     allRecords = data.records || [];
     renderTodaySummary();
@@ -1206,83 +1178,38 @@ async function loadRecords() {
 
 async function logEvent(type, duracionMin, notas) {
   const body = { action: 'logEvent', type, duracion_min: duracionMin, notas };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body),
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-
-    const ct = resp.headers.get('content-type') || '';
-    if (!ct.includes('json')) throw new Error('Backend no devolvió JSON');
-
-    const result = await resp.json();
-    if (!result.success) throw new Error(result.error || 'Error desconocido');
-    return result;
-  } catch (e) {
-    clearTimeout(timeout);
-    throw e;
-  }
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.error || 'Error desconocido');
+  return result;
 }
 
 async function updateRecord(rowId, type, duracionMin, notas, timestamp, pesoKg) {
   const body = { action: 'updateRecord', row_id: rowId, type, duracion_min: duracionMin, notas, timestamp, peso_kg: pesoKg };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body),
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-
-    const ct = resp.headers.get('content-type') || '';
-    if (!ct.includes('json')) throw new Error('Backend no devolvió JSON');
-
-    const result = await resp.json();
-    if (!result.success) throw new Error(result.error || 'Error desconocido');
-    return result;
-  } catch (e) {
-    clearTimeout(timeout);
-    throw e;
-  }
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.error || 'Error desconocido');
+  return result;
 }
 
 async function deleteRecord(rowId) {
   const body = { action: 'deleteRecord', row_id: rowId };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body),
-      signal: controller.signal
-    });
-    clearTimeout(timeout);
-
-    const ct = resp.headers.get('content-type') || '';
-    if (!ct.includes('json')) throw new Error('Backend no devolvió JSON');
-
-    const result = await resp.json();
-    if (!result.success) throw new Error(result.error || 'Error desconocido');
-    return result;
-  } catch (e) {
-    clearTimeout(timeout);
-    throw e;
-  }
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.error || 'Error desconocido');
+  return result;
 }
 
 // ================================================================
@@ -1555,37 +1482,14 @@ async function savePeso() {
 
 async function logPeso(pesoKg, notas) {
   const body = { action: 'logPeso', peso_kg: pesoKg, notas };
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
-  try {
-    const resp = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-      redirect: 'manual' // Don't follow redirects — detect them
-    });
-    clearTimeout(timeout);
-
-    // Type 0 = opaque redirect, Status 302 = manual redirect
-    if (resp.type === 'opaqueredirect' || resp.status === 301 || resp.status === 302 || resp.status === 303 || resp.status === 307 || resp.status === 308) {
-      throw new Error('Backend redirect (deployment puede estar bloqueado). Re-desplegar Apps Script.');
-    }
-
-    const contentType = resp.headers.get('content-type') || '';
-    if (!contentType.includes('json')) {
-      throw new Error('Backend devolvió respuesta no-JSON (¿URL incorrecta o deployment bloqueado?)');
-    }
-
-    const result = await resp.json();
-    if (!result.success) throw new Error(result.error || 'Error desconocido');
-    return result;
-  } catch (e) {
-    clearTimeout(timeout);
-    throw e;
-  }
+  const resp = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  const result = await resp.json();
+  if (!result.success) throw new Error(result.error || 'Error desconocido');
+  return result;
 }
 
 // ================================================================
