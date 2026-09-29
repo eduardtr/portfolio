@@ -749,24 +749,6 @@
   </div>
 </div>
 
-<!-- Quick Modal (pipi / caca) -->
-<div class="modal-overlay" id="quickModal">
-  <div class="modal">
-    <div class="modal-icon" id="quickIcon">💧</div>
-    <h3 id="quickTitle">Registrar Pipí</h3>
-    <p id="quickTime"></p>
-    <div class="modal-form">
-      <div class="form-group">
-        <label>📌 Notas (opcional)</label>
-        <input type="text" id="quickNotasInput" placeholder="Ej: biberón, izquierda..." style="width:100%;padding:12px 14px;border:2px solid var(--yellow-light);border-radius:12px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;">
-      </div>
-    </div>
-    <button class="btn-save" id="quickSaveBtn" onclick="saveQuick()">Guardar</button>
-    <button class="btn-cancel" onclick="closeQuickModal()">Cancelar</button>
-    <input type="hidden" id="quickType">
-  </div>
-</div>
-
 <!-- Edit Modal -->
 <div class="modal-overlay" id="editModal">
   <div class="modal">
@@ -929,12 +911,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   refreshCriticalState();
   showLoader();
   loadRecords();
-
-  // Background refresh every 5 min (was 30s — too aggressive)
-  setInterval(loadRecords, 5 * 60 * 1000);
-
-  // Refresh critical state (Vitamina D + Lactancia session) every 2 min
-  setInterval(refreshCriticalState, 2 * 60 * 1000);
+  // No background polling — all backend calls are on-demand only
 });
 
 // ================================================================
@@ -1039,13 +1016,22 @@ function startLactancia() {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(updateBanTimer, 1);
 
-  // Register in backend immediately so other devices can stop it
+  // Register in backend (fire-and-forget) with timeout
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
   fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: 'startLactancia', start: sessionInicio })
+    body: JSON.stringify({ action: 'startLactancia', start: sessionInicio }),
+    signal: controller.signal
   })
-    .then(r => r.json())
+    .then(r => {
+      clearTimeout(timeout);
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) throw new Error('No JSON');
+      return r.json();
+    })
     .then(data => {
       if (data.success) {
         localStorage.setItem(SESSION_ROW_KEY, data.row_id || '');
@@ -1053,6 +1039,7 @@ function startLactancia() {
       }
     })
     .catch(() => {
+      clearTimeout(timeout);
       document.getElementById('banSaveStatus').textContent = '⚠️ Sin conexión';
     });
 }
@@ -1088,17 +1075,30 @@ async function stopLactancia() {
 
   const notas = document.getElementById('banNotas').value;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
   try {
-    // Stop session in backend
-    await fetch(API_URL, {
+    const resp = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'stopLactancia', row_id: rowId, duracion_min: Math.max(1, diff), notas })
+      body: JSON.stringify({ action: 'stopLactancia', row_id: rowId, duracion_min: Math.max(1, diff), notas }),
+      signal: controller.signal
     });
+    clearTimeout(timeout);
+
+    const ct = resp.headers.get('content-type') || '';
+    if (!ct.includes('json')) throw new Error('Backend no devolvió JSON');
+
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Error desconocido');
+
     showToast('🍼 Lactancia registrada (' + diff + ' min)');
     await loadRecords();
     updateNextFeedingBanner();
+    // No polling — UI is already up to date
   } catch (e) {
+    clearTimeout(timeout);
     showToast('❌ Error: ' + e.message);
   }
 }
@@ -1206,50 +1206,83 @@ async function loadRecords() {
 
 async function logEvent(type, duracionMin, notas) {
   const body = { action: 'logEvent', type, duracion_min: duracionMin, notas };
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  });
-  const result = await resp.json();
-  if (!result.success) throw new Error(result.error);
-  return result;
-}
 
-async function logEventWithTimestamp(type, duracionMin, notas, timestamp) {
-  const body = { action: 'logEventWithTimestamp', type, duracion_min: duracionMin, notas, timestamp };
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  });
-  const result = await resp.json();
-  if (!result.success) throw new Error(result.error);
-  return result;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    const ct = resp.headers.get('content-type') || '';
+    if (!ct.includes('json')) throw new Error('Backend no devolvió JSON');
+
+    const result = await resp.json();
+    if (!result.success) throw new Error(result.error || 'Error desconocido');
+    return result;
+  } catch (e) {
+    clearTimeout(timeout);
+    throw e;
+  }
 }
 
 async function updateRecord(rowId, type, duracionMin, notas, timestamp, pesoKg) {
   const body = { action: 'updateRecord', row_id: rowId, type, duracion_min: duracionMin, notas, timestamp, peso_kg: pesoKg };
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  });
-  const result = await resp.json();
-  if (!result.success) throw new Error(result.error);
-  return result;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    const ct = resp.headers.get('content-type') || '';
+    if (!ct.includes('json')) throw new Error('Backend no devolvió JSON');
+
+    const result = await resp.json();
+    if (!result.success) throw new Error(result.error || 'Error desconocido');
+    return result;
+  } catch (e) {
+    clearTimeout(timeout);
+    throw e;
+  }
 }
 
 async function deleteRecord(rowId) {
   const body = { action: 'deleteRecord', row_id: rowId };
-  const resp = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  });
-  const result = await resp.json();
-  if (!result.success) throw new Error(result.error);
-  return result;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    const ct = resp.headers.get('content-type') || '';
+    if (!ct.includes('json')) throw new Error('Backend no devolvió JSON');
+
+    const result = await resp.json();
+    if (!result.success) throw new Error(result.error || 'Error desconocido');
+    return result;
+  } catch (e) {
+    clearTimeout(timeout);
+    throw e;
+  }
 }
 
 // ================================================================
@@ -1547,45 +1580,6 @@ async function logPeso(pesoKg, notas) {
   } catch (e) {
     clearTimeout(timeout);
     throw e;
-  }
-}
-
-// ================================================================
-// QUICK MODAL (pipi / caca)
-// ================================================================
-
-function openQuickModal(type) {
-  const now = new Date();
-  document.getElementById('quickType').value = type;
-  document.getElementById('quickNotasInput').value = '';
-  document.getElementById('quickTime').textContent = 'Hora: ' + timeFormat(now);
-  document.getElementById('quickIcon').textContent = TYPE_ICONS[type] || '📝';
-  document.getElementById('quickTitle').textContent = 'Registrar ' + TYPE_LABELS[type];
-  document.getElementById('quickSaveBtn').textContent = 'Guardar';
-  document.getElementById('quickSaveBtn').disabled = false;
-  document.getElementById('quickModal').classList.add('active');
-}
-
-function closeQuickModal() {
-  document.getElementById('quickModal').classList.remove('active');
-}
-
-async function saveQuick() {
-  const type = document.getElementById('quickType').value;
-  const notas = document.getElementById('quickNotasInput').value;
-  const btn = document.getElementById('quickSaveBtn');
-  btn.disabled = true;
-  btn.textContent = '';
-
-  try {
-    await logEvent(type, null, notas);
-    closeQuickModal();
-    showToast(TYPE_ICONS[type] + ' ' + TYPE_LABELS[type] + ' registrada');
-    await loadRecords();
-  } catch (e) {
-    showToast('❌ Error: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = 'Guardar';
   }
 }
 
